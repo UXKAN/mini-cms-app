@@ -86,7 +86,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Stat cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
         <StatCard
           label="Totaal leden"
           value={dataLoading ? "…" : String(total ?? 0)}
@@ -184,15 +184,15 @@ function StatCard({
 }) {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">
+      <CardContent className="p-7">
+        <div className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "var(--ink-muted)" }}>
           {label}
         </div>
-        <div className="font-serif text-[40px] font-normal text-foreground mt-1 leading-none">
+        <div className="font-serif text-[44px] font-normal mt-2 leading-none" style={{ color: "var(--ink)" }}>
           {value}
         </div>
         {hint && (
-          <div className="text-[12px] text-muted-foreground mt-1.5">{hint}</div>
+          <div className="text-[12px] mt-2" style={{ color: "var(--ink-subtle)" }}>{hint}</div>
         )}
       </CardContent>
     </Card>

@@ -72,11 +72,12 @@
   /* Note: --border, --radius, --accent already defined above */
 }
 
-* {
+*, ::before, ::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  border-color: var(--border);
 }
 
 html,

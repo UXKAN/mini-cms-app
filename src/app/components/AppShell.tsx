@@ -55,7 +55,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <OrgContext.Provider value={org}>
       <div className="flex min-h-screen">
         {/* ── Sidebar ── */}
-        <aside className="w-[220px] bg-card border-r border-border flex flex-col sticky top-0 h-screen shrink-0">
+        <aside className="w-[220px] bg-card flex flex-col sticky top-0 h-screen shrink-0" style={{ borderRight: "1px solid var(--border)" }}>
           {/* Logo */}
           <div className="px-4 pt-6 pb-4">
             <div className="flex items-center gap-2.5">
