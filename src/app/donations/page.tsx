@@ -4,9 +4,26 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
-import Modal from "../components/Modal";
 import { useOrg } from "../lib/orgContext";
 import type { DonationMethod, DonationWithMember, Member } from "../lib/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const METHOD_LABELS: Record<DonationMethod, string> = {
   cash: "Contant",
@@ -32,7 +49,6 @@ function DonationsInner() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [modalMode, setModalMode] = useState<ModalMode>("closed");
   const [editing, setEditing] = useState<DonationWithMember | null>(null);
 
@@ -51,32 +67,17 @@ function DonationsInner() {
         .order("last_name", { nullsFirst: false })
         .order("name"),
     ]);
-
     if (donRes.error) setError(donRes.error.message);
     else setDonations((donRes.data ?? []) as DonationWithMember[]);
-
     if (!memRes.error) setMembers((memRes.data ?? []) as Member[]);
     setLoading(false);
   }, [org.id]);
 
-  useEffect(() => {
-    if (user) fetchAll();
-  }, [user, fetchAll]);
+  useEffect(() => { if (user) fetchAll(); }, [user, fetchAll]);
 
-  const openAdd = () => {
-    setEditing(null);
-    setModalMode("add");
-  };
-
-  const openEdit = (d: DonationWithMember) => {
-    setEditing(d);
-    setModalMode("edit");
-  };
-
-  const closeModal = () => {
-    setModalMode("closed");
-    setEditing(null);
-  };
+  const openAdd = () => { setEditing(null); setModalMode("add"); };
+  const openEdit = (d: DonationWithMember) => { setEditing(d); setModalMode("edit"); };
+  const closeModal = () => { setModalMode("closed"); setEditing(null); };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Donatie verwijderen?")) return;
@@ -93,156 +94,124 @@ function DonationsInner() {
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          marginBottom: 28,
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="flex justify-between items-end mb-7 gap-4 flex-wrap">
         <div>
-          <h1
-            style={{
-              fontFamily: "var(--font-serif), Georgia, serif",
-              fontSize: 36,
-              fontWeight: 400,
-              color: "var(--ink)",
-            }}
-          >
-            Donaties
-          </h1>
-          <p style={{ color: "var(--ink-muted)", fontSize: 14, marginTop: 4 }}>
+          <h1 className="font-serif text-4xl font-normal text-foreground">Donaties</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Registreer donaties en koppel ze optioneel aan een lid.
           </p>
         </div>
         {donations.length > 0 && (
-          <button onClick={openAdd} style={primaryBtn}>
-            Donatie toevoegen
-          </button>
+          <Button onClick={openAdd}>Donatie toevoegen</Button>
         )}
       </div>
 
       {donations.length > 0 && (
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <StatCard label="Totaal dit jaar" value={formatEuro(yearTotal)} />
           <StatCard label="Totaal (alles)" value={formatEuro(total)} />
           <StatCard label="Aantal donaties" value={String(donations.length)} />
-        </section>
+        </div>
       )}
 
       {error && (
         <div
-          style={{
-            padding: 14,
-            background: "var(--error-light)",
-            color: "var(--error)",
-            borderRadius: "var(--radius-sm)",
-            marginBottom: 16,
-            fontSize: 14,
-          }}
+          className="p-3 rounded-[7px] mb-4 text-sm"
+          style={{ background: "var(--error-light)", color: "var(--error)" }}
         >
           {error}
         </div>
       )}
 
       {loading ? (
-        <p style={{ color: "var(--ink-muted)" }}>Donaties laden...</p>
+        <p className="text-muted-foreground">Donaties laden...</p>
       ) : donations.length === 0 ? (
-        <div style={{ ...cardStyle, textAlign: "center", padding: "56px 24px" }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-serif), Georgia, serif",
-              fontSize: 22,
-              fontWeight: 400,
-              color: "var(--ink)",
-              marginBottom: 8,
-            }}
-          >
+        <div
+          className="rounded-[10px] border border-border p-14 text-center"
+          style={{ background: "var(--surface)" }}
+        >
+          <h2 className="font-serif text-2xl font-normal text-foreground mb-2">
             Nog geen donaties
           </h2>
-          <p style={{ color: "var(--ink-muted)", fontSize: 14, marginBottom: 24 }}>
+          <p className="text-muted-foreground text-sm mb-6">
             Registreer je eerste donatie en koppel deze optioneel aan een lid.
           </p>
-          <button onClick={openAdd} style={primaryBtn}>
-            Donatie toevoegen
-          </button>
+          <Button onClick={openAdd}>Donatie toevoegen</Button>
         </div>
       ) : (
-        <div style={{ ...cardStyle, padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Datum</th>
-                <th style={thStyle}>Bedrag</th>
-                <th style={thStyle}>Methode</th>
-                <th style={thStyle}>Lid</th>
-                <th style={thStyle}>Notities</th>
-                <th style={thStyle}></th>
-              </tr>
-            </thead>
-            <tbody>
+        <div
+          className="rounded-[10px] border border-border overflow-hidden"
+          style={{ background: "var(--surface)" }}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Datum</TableHead>
+                <TableHead>Bedrag</TableHead>
+                <TableHead>Methode</TableHead>
+                <TableHead>Lid</TableHead>
+                <TableHead>Notities</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {donations.map((d) => (
-                <tr key={d.id} style={{ borderTop: "1px solid var(--border)" }}>
-                  <td style={tdStyle}>
+                <TableRow key={d.id}>
+                  <TableCell>
                     {new Date(d.donated_at).toLocaleDateString("nl-NL")}
-                  </td>
-                  <td style={{ ...tdStyle, fontWeight: 600 }}>
+                  </TableCell>
+                  <TableCell className="font-semibold">
                     {formatEuro(Number(d.amount))}
-                  </td>
-                  <td style={tdStyle}>{METHOD_LABELS[d.method]}</td>
-                  <td style={tdStyle}>
-                    {d.member ? memberLabel(d.member) : (
-                      <span style={{ color: "var(--ink-subtle)", fontStyle: "italic" }}>
-                        Anoniem
-                      </span>
+                  </TableCell>
+                  <TableCell>{METHOD_LABELS[d.method]}</TableCell>
+                  <TableCell>
+                    {d.member ? (
+                      memberLabel(d.member)
+                    ) : (
+                      <span className="text-muted-foreground italic">Anoniem</span>
                     )}
-                  </td>
-                  <td style={{ ...tdStyle, color: "var(--ink-muted)" }}>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
                     {d.notes ?? "—"}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: "right", whiteSpace: "nowrap" }}>
-                    <button onClick={() => openEdit(d)} style={rowBtn}>
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
                       Bewerken
-                    </button>{" "}
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
                       onClick={() => handleDelete(d.id)}
-                      style={{ ...rowBtn, color: "var(--error)" }}
                     >
                       Verwijderen
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
-      <Modal
+      <Dialog
         open={modalMode !== "closed"}
-        onClose={closeModal}
-        title={modalMode === "edit" ? "Donatie bewerken" : "Nieuwe donatie"}
+        onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DonationForm
-          initial={editing}
-          members={members}
-          onSaved={async () => {
-            closeModal();
-            await fetchAll();
-          }}
-          onCancel={closeModal}
-        />
-      </Modal>
+        <DialogContent className="max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="font-serif font-normal text-xl">
+              {modalMode === "edit" ? "Donatie bewerken" : "Nieuwe donatie"}
+            </DialogTitle>
+          </DialogHeader>
+          <DonationForm
+            initial={editing}
+            members={members}
+            onSaved={async () => { closeModal(); await fetchAll(); }}
+            onCancel={closeModal}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -275,18 +244,15 @@ function DonationForm({
   const [memberId, setMemberId] = useState<string>(initial?.member_id ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     const amt = parseFloat(amount.replace(",", "."));
-    if (!amt || amt <= 0) {
-      setError("Vul een geldig bedrag in.");
-      return;
-    }
+    if (!amt || amt <= 0) { setFormError("Vul een geldig bedrag in."); return; }
     setSaving(true);
-    setError(null);
+    setFormError(null);
 
     const payload = {
       amount: amt,
@@ -302,103 +268,91 @@ function DonationForm({
           .from("donations")
           .insert({ ...payload, user_id: user.id, org_id: org.id });
 
-    if (error) {
-      setError(error.message);
-      setSaving(false);
-    } else {
-      setSaving(false);
-      await onSaved();
-    }
+    if (error) { setFormError(error.message); setSaving(false); }
+    else { setSaving(false); await onSaved(); }
   };
 
+  const selectCls =
+    "h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring w-full";
+
   return (
-    <form onSubmit={handleSubmit}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <label style={fieldLabel}>
-          Bedrag (EUR) *
-          <input
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs text-muted-foreground">Bedrag (EUR) *</Label>
+          <Input
             type="number"
             step="0.01"
             min="0"
             placeholder="bv. 25.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            style={inputStyle}
             required
+            className="h-10 text-sm"
           />
-        </label>
-        <label style={fieldLabel}>
-          Datum *
-          <input
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs text-muted-foreground">Datum *</Label>
+          <Input
             type="date"
             value={donatedAt}
             onChange={(e) => setDonatedAt(e.target.value)}
-            style={inputStyle}
             required
+            className="h-10 text-sm"
           />
-        </label>
-        <label style={fieldLabel}>
-          Methode
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs text-muted-foreground">Methode</Label>
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value as DonationMethod)}
-            style={inputStyle}
+            className={selectCls}
           >
             {(Object.keys(METHOD_LABELS) as DonationMethod[]).map((m) => (
-              <option key={m} value={m}>
-                {METHOD_LABELS[m]}
-              </option>
+              <option key={m} value={m}>{METHOD_LABELS[m]}</option>
             ))}
           </select>
-        </label>
-        <label style={fieldLabel}>
-          Lid (optioneel)
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs text-muted-foreground">Lid (optioneel)</Label>
           <select
             value={memberId}
             onChange={(e) => setMemberId(e.target.value)}
-            style={inputStyle}
+            className={selectCls}
           >
             <option value="">— anoniem —</option>
             {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {memberLabel(m)}
-              </option>
+              <option key={m.id} value={m.id}>{memberLabel(m)}</option>
             ))}
           </select>
-        </label>
-        <label style={{ ...fieldLabel, gridColumn: "1 / -1" }}>
-          Notities
-          <input
+        </div>
+        <div className="flex flex-col gap-1.5 col-span-2">
+          <Label className="text-xs text-muted-foreground">Notities</Label>
+          <Input
             placeholder="Omschrijving, doel, etc."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            style={inputStyle}
+            className="h-10 text-sm"
           />
-        </label>
+        </div>
       </div>
 
-      {error && (
+      {formError && (
         <div
-          style={{
-            padding: 12,
-            background: "var(--error-light)",
-            color: "var(--error)",
-            borderRadius: "var(--radius-sm)",
-            marginTop: 16,
-            fontSize: 14,
-          }}
+          className="p-3 rounded-[7px] text-sm"
+          style={{ background: "var(--error-light)", color: "var(--error)" }}
         >
-          {error}
+          {formError}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "flex-end" }}>
-        <button type="button" onClick={onCancel} style={ghostBtn} disabled={saving}>
+      <div className="flex gap-2 justify-end">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuleren
-        </button>
-        <button type="submit" disabled={saving} style={primaryBtn}>
+        </Button>
+        <Button type="submit" disabled={saving}>
           {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -406,31 +360,16 @@ function DonationForm({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={cardStyle}>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: "var(--ink-subtle)",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-serif), Georgia, serif",
-          fontSize: 32,
-          fontWeight: 400,
-          color: "var(--ink)",
-          marginTop: 6,
-          lineHeight: 1.1,
-        }}
-      >
-        {value}
-      </div>
-    </div>
+    <Card>
+      <CardContent className="p-6">
+        <div className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">
+          {label}
+        </div>
+        <div className="font-serif text-[32px] font-normal text-foreground mt-1 leading-none">
+          {value}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -441,81 +380,3 @@ function formatEuro(n: number) {
     minimumFractionDigits: 2,
   });
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: "11px 12px",
-  fontSize: 14,
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius-sm)",
-  background: "var(--bg)",
-  color: "var(--ink)",
-  width: "100%",
-};
-
-const fieldLabel: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 6,
-  fontSize: 12,
-  color: "var(--ink-muted)",
-  fontWeight: 500,
-};
-
-const cardStyle: React.CSSProperties = {
-  padding: 24,
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius)",
-  marginBottom: 24,
-  background: "var(--surface)",
-  boxShadow: "var(--shadow)",
-};
-
-const primaryBtn: React.CSSProperties = {
-  padding: "10px 18px",
-  fontSize: 14,
-  fontWeight: 500,
-  border: "none",
-  borderRadius: "var(--radius-sm)",
-  background: "var(--accent)",
-  color: "#fff",
-  cursor: "pointer",
-};
-
-const ghostBtn: React.CSSProperties = {
-  padding: "10px 18px",
-  fontSize: 14,
-  fontWeight: 500,
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius-sm)",
-  background: "transparent",
-  color: "var(--ink)",
-  cursor: "pointer",
-};
-
-const rowBtn: React.CSSProperties = {
-  padding: "6px 12px",
-  fontSize: 13,
-  fontWeight: 500,
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius-sm)",
-  background: "transparent",
-  color: "var(--ink)",
-  cursor: "pointer",
-};
-
-const thStyle: React.CSSProperties = {
-  textAlign: "left",
-  padding: "14px 16px",
-  fontSize: 11,
-  fontWeight: 700,
-  color: "var(--ink-subtle)",
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-  background: "var(--bg)",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "14px 16px",
-  fontSize: 14,
-  color: "var(--ink)",
-};
