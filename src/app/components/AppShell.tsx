@@ -143,7 +143,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* ── Main content ── */}
-        <main className="flex-1 px-12 py-10">{children}</main>
+        <main className="flex-1 px-14 py-10 min-w-0">{children}</main>
       </div>
     </OrgContext.Provider>
   );
