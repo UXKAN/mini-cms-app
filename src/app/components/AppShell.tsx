@@ -133,7 +133,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-muted-foreground gap-2 text-[12px] h-8"
+              className="w-full justify-start text-muted-foreground gap-2 text-[12px] h-8 hover:bg-[var(--accent-light)] hover:text-[var(--accent-dark)]"
               onClick={handleLogout}
             >
               <LogOut size={12} />
