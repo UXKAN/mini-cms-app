@@ -13,8 +13,6 @@ import {
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Member } from "../lib/types";
 
 /* ─── helpers ─────────────────────────────────────── */
@@ -24,138 +22,213 @@ function displayName(m: Member): string {
   return combined || m.name || "—";
 }
 
-function formatEuro(n: number, decimals = 0) {
+function eur(n: number) {
   return n.toLocaleString("nl-NL", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    style: "currency", currency: "EUR",
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
   });
 }
 
-function monthLabel(date: Date) {
-  return date.toLocaleDateString("nl-NL", { month: "short" });
+const MONTHS_FULL = [
+  "Januari","Februari","Maart","April","Mei","Juni",
+  "Juli","Augustus","September","Oktober","November","December",
+];
+const MONTHS_SHORT = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+
+/* ─── shared card wrapper ─────────────────────────── */
+
+function Card({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div style={{
+      background: "var(--surface)",
+      border: "1px solid var(--border)",
+      borderRadius: "var(--radius)",
+      boxShadow: "var(--shadow)",
+      padding: "22px 24px",
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
 }
 
-const NL_MONTHS = [
-  "januari","februari","maart","april","mei","juni",
-  "juli","augustus","september","oktober","november","december",
-];
+/* ─── shared label style ──────────────────────────── */
 
-/* ─── types ────────────────────────────────────────── */
+const labelStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: "var(--ink-subtle)",
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  marginBottom: 8,
+};
+
+/* ─── stat number ─────────────────────────────────── */
+
+function StatNum({ value, size = 30 }: { value: string; size?: number }) {
+  return (
+    <span style={{
+      fontFamily: "var(--font-serif)",
+      fontSize: size,
+      fontWeight: 400,
+      color: "var(--ink)",
+      lineHeight: 1,
+    }}>
+      {value}
+    </span>
+  );
+}
+
+/* ─── delta badge ─────────────────────────────────── */
+
+function Delta({ pct }: { pct: number | null }) {
+  if (pct === null) return null;
+  const up = pct >= 0;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 3,
+      fontSize: 12, fontWeight: 600,
+      padding: "3px 8px",
+      borderRadius: 6,
+      background: up ? "var(--success-light)" : "var(--error-light)",
+      color: up ? "var(--success)" : "var(--error)",
+    }}>
+      {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+      {Math.abs(pct).toFixed(1)}%
+    </span>
+  );
+}
+
+/* ─── sparkline chart ─────────────────────────────── */
 
 interface ChartPoint { label: string; amount: number }
-interface TopDonor { id: string; name: string; type: string; amount: number }
 
-/* ─── main page ────────────────────────────────────── */
+function Sparkline({ data }: { data: ChartPoint[] }) {
+  if (data.every(d => d.amount === 0)) {
+    return (
+      <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontSize: 12, color: "var(--ink-subtle)" }}>Geen data</span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ height: 52 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 10, fill: "var(--ink-subtle)" }}
+            tickLine={false}
+            axisLine={false}
+            interval={4}
+          />
+          <Tooltip
+            formatter={(v) => [eur(Number(v ?? 0)), "Cumulatief"]}
+            contentStyle={{
+              fontSize: 12,
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              background: "var(--surface)",
+              color: "var(--ink)",
+              boxShadow: "var(--shadow)",
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="amount"
+            stroke="var(--accent)"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: "var(--accent)" }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/* ─── page ────────────────────────────────────────── */
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
+  const now = new Date();
 
-  // Chart state
-  const [chartMonth, setChartMonth] = useState(new Date());
+  const [chartMonth, setChartMonth] = useState(now.getMonth());
+  const [chartYear, setChartYear] = useState(now.getFullYear());
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const [monthTotal, setMonthTotal] = useState(0);
   const [prevMonthTotal, setPrevMonthTotal] = useState(0);
   const [yearTotal, setYearTotal] = useState(0);
-
-  // Members state
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [monthlyRecurring, setMonthlyRecurring] = useState<number | null>(null);
-  const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
-
-  // Loading
+  const [topDonors, setTopDonors] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, chartMonth]);
+  }, [user, chartMonth, chartYear]);
 
   async function load() {
     setLoading(true);
+    const monthStart = new Date(chartYear, chartMonth, 1).toISOString().slice(0, 10);
+    const monthEnd   = new Date(chartYear, chartMonth + 1, 0).toISOString().slice(0, 10);
+    const prevM = chartMonth === 0 ? 11 : chartMonth - 1;
+    const prevY = chartMonth === 0 ? chartYear - 1 : chartYear;
+    const prevStart = new Date(prevY, prevM, 1).toISOString().slice(0, 10);
+    const prevEnd   = new Date(prevY, prevM + 1, 0).toISOString().slice(0, 10);
+    const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
 
-    const year = chartMonth.getFullYear();
-    const month = chartMonth.getMonth();
-
-    // Current month range
-    const monthStart = new Date(year, month, 1).toISOString().slice(0, 10);
-    const monthEnd = new Date(year, month + 1, 0).toISOString().slice(0, 10);
-    // Prev month range
-    const prevStart = new Date(year, month - 1, 1).toISOString().slice(0, 10);
-    const prevEnd = new Date(year, month, 0).toISOString().slice(0, 10);
-    // Year range
-    const yearStart = new Date(year, 0, 1).toISOString().slice(0, 10);
-
-    const [
-      { data: monthDons },
-      { data: prevDons },
-      { data: yearDons },
-      { count: memCount },
-      { data: members },
-    ] = await Promise.all([
-      supabase.from("donations").select("amount, donated_at")
-        .gte("donated_at", monthStart).lte("donated_at", monthEnd),
-      supabase.from("donations").select("amount")
-        .gte("donated_at", prevStart).lte("donated_at", prevEnd),
-      supabase.from("donations").select("amount")
-        .gte("donated_at", yearStart),
+    const [monthDons, prevDons, yearDons, memCount, members] = await Promise.all([
+      supabase.from("donations").select("amount, donated_at").gte("donated_at", monthStart).lte("donated_at", monthEnd),
+      supabase.from("donations").select("amount").gte("donated_at", prevStart).lte("donated_at", prevEnd),
+      supabase.from("donations").select("amount").gte("donated_at", yearStart),
       supabase.from("members").select("*", { count: "exact", head: true }),
       supabase.from("members").select("id, name, first_name, last_name, monthly_amount, membership_type")
         .not("monthly_amount", "is", null).order("monthly_amount", { ascending: false }).limit(5),
     ]);
 
-    // Chart: group by day
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(chartYear, chartMonth + 1, 0).getDate();
     const byDay = new Array(daysInMonth).fill(0);
-    (monthDons ?? []).forEach((d) => {
-      const day = new Date(d.donated_at).getDate();
-      byDay[day - 1] += Number(d.amount);
+    (monthDons.data ?? []).forEach((d) => {
+      byDay[new Date(d.donated_at).getDate() - 1] += Number(d.amount);
     });
-    // Build cumulative daily chart
-    let cumulative = 0;
-    const points: ChartPoint[] = byDay.map((amt, i) => {
-      cumulative += amt;
-      return { label: String(i + 1), amount: cumulative };
-    });
-    setChartData(points);
+    let cum = 0;
+    setChartData(byDay.map((amt, i) => { cum += amt; return { label: String(i + 1), amount: cum }; }));
 
-    const mTotal = (monthDons ?? []).reduce((s, d) => s + Number(d.amount), 0);
-    const pTotal = (prevDons ?? []).reduce((s, d) => s + Number(d.amount), 0);
-    const yTotal = (yearDons ?? []).reduce((s, d) => s + Number(d.amount), 0);
+    const mTotal = (monthDons.data ?? []).reduce((s, d) => s + Number(d.amount), 0);
+    const pTotal = (prevDons.data ?? []).reduce((s, d) => s + Number(d.amount), 0);
+    const yTotal = (yearDons.data ?? []).reduce((s, d) => s + Number(d.amount), 0);
     setMonthTotal(mTotal);
     setPrevMonthTotal(pTotal);
     setYearTotal(yTotal);
-
-    setMemberCount(memCount ?? 0);
-    const recurring = (members ?? []).reduce((s, m) => s + Number(m.monthly_amount ?? 0), 0);
-    setMonthlyRecurring(recurring);
-
-    const donors: TopDonor[] = (members ?? []).map((m) => ({
-      id: m.id,
-      name: [m.first_name, m.last_name].filter(Boolean).join(" ").trim() || m.name || "—",
-      type: m.membership_type ?? "Lid",
-      amount: Number(m.monthly_amount ?? 0),
-    }));
-    setTopDonors(donors);
-
+    setMemberCount(memCount.count ?? 0);
+    setMonthlyRecurring((members.data ?? []).reduce((s, m) => s + Number(m.monthly_amount ?? 0), 0));
+    setTopDonors((members.data ?? []) as Member[]);
     setLoading(false);
   }
 
-  const prevMonth = () => setChartMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  const nextMonth = () => setChartMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
-  const isCurrentMonth = chartMonth.getFullYear() === new Date().getFullYear()
-    && chartMonth.getMonth() === new Date().getMonth();
+  const prevMonth = () => {
+    if (chartMonth === 0) { setChartMonth(11); setChartYear(y => y - 1); }
+    else setChartMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    const nextM = chartMonth === 11 ? 0 : chartMonth + 1;
+    const nextY = chartMonth === 11 ? chartYear + 1 : chartYear;
+    if (nextY > now.getFullYear() || (nextY === now.getFullYear() && nextM > now.getMonth())) return;
+    if (chartMonth === 11) { setChartMonth(0); setChartYear(y => y + 1); } else setChartMonth(m => m + 1);
+  };
+  const isCurrentMonth = chartYear === now.getFullYear() && chartMonth === now.getMonth();
+  const pctChange = prevMonthTotal > 0 ? ((monthTotal - prevMonthTotal) / prevMonthTotal) * 100 : null;
 
-  const pctChange = prevMonthTotal > 0
-    ? ((monthTotal - prevMonthTotal) / prevMonthTotal) * 100
-    : null;
-  const trending = pctChange !== null && pctChange >= 0;
-
-  if (authLoading) {
-    return <main className="p-10" style={{ color: "var(--ink-muted)" }}>Laden...</main>;
-  }
+  if (authLoading) return null;
 
   const today = new Date().toLocaleDateString("nl-NL", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -164,256 +237,139 @@ export default function DashboardPage() {
   return (
     <AppShell>
       {/* Header */}
-      <header className="mb-8">
-        <h1 className="font-serif text-[40px] font-normal leading-tight" style={{ color: "var(--ink)" }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 400, color: "var(--ink)" }}>
           Dashboard
         </h1>
-        <p className="text-sm mt-1 capitalize" style={{ color: "var(--ink-muted)" }}>
+        <p style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 4 }}>
           Overzicht · {today}
         </p>
-      </header>
+      </div>
 
-      {/* ── Row 1: Donation chart ── */}
-      <Card className="mb-5">
-        <CardContent className="p-7">
-          <div className="flex items-start justify-between flex-wrap gap-6">
-            {/* Left: total + change */}
+      {/* Grid — exact 2-col like design, gap 16px */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+        {/* ── 1. Totale donaties (spans full width) ── */}
+        <Card style={{ gridColumn: "1 / span 2" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+            {/* Left */}
             <div>
-              <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-                Totale donaties
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-serif text-[42px] leading-none" style={{ color: "var(--ink)" }}>
-                  {loading ? "…" : formatEuro(monthTotal)}
-                </span>
-                {pctChange !== null && (
-                  <span
-                    className="inline-flex items-center gap-1 text-[13px] font-semibold px-2 py-1 rounded-md"
-                    style={{
-                      background: trending ? "var(--success-light)" : "var(--error-light)",
-                      color: trending ? "var(--success)" : "var(--error)",
-                    }}
-                  >
-                    {trending ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                    {Math.abs(pctChange).toFixed(1)}%
-                  </span>
-                )}
+              <div style={labelStyle}>Totale donaties</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <StatNum value={loading ? "…" : eur(monthTotal)} size={36} />
+                <Delta pct={pctChange} />
               </div>
               {prevMonthTotal > 0 && (
-                <p className="text-sm mt-1" style={{ color: "var(--ink-muted)" }}>
-                  vs. vorige maand ({formatEuro(prevMonthTotal)})
-                </p>
+                <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>
+                  vs. vorige maand ({eur(prevMonthTotal)})
+                </div>
               )}
-
-              {/* Month navigation */}
-              <div className="flex items-center gap-2 mt-5">
-                <button
-                  onClick={prevMonth}
-                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
-                  style={{ border: "1px solid var(--border)", color: "var(--ink-muted)" }}
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <span className="text-sm font-medium px-2" style={{ color: "var(--ink)", minWidth: 110, textAlign: "center" }}>
-                  {NL_MONTHS[chartMonth.getMonth()].charAt(0).toUpperCase() + NL_MONTHS[chartMonth.getMonth()].slice(1)}{" "}
-                  {chartMonth.getFullYear()}
-                </span>
-                <button
-                  onClick={nextMonth}
-                  disabled={isCurrentMonth}
-                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors disabled:opacity-30"
-                  style={{ border: "1px solid var(--border)", color: "var(--ink-muted)" }}
-                >
-                  <ChevronRight size={14} />
-                </button>
-              </div>
             </div>
-
             {/* Right: year total */}
-            <div className="text-right">
-              <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-                Jaar tot nu
+            <div style={{ textAlign: "right" }}>
+              <div style={labelStyle}>Jaar tot nu</div>
+              <StatNum value={loading ? "…" : eur(yearTotal)} size={22} />
+              <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
+                Jan – {MONTHS_SHORT[now.getMonth()]} {now.getFullYear()}
               </div>
-              <div className="font-serif text-[32px] leading-none" style={{ color: "var(--ink)" }}>
-                {loading ? "…" : formatEuro(yearTotal)}
-              </div>
-              <p className="text-sm mt-1" style={{ color: "var(--ink-muted)" }}>
-                Jan – {NL_MONTHS[new Date().getMonth()].charAt(0).toUpperCase() + NL_MONTHS[new Date().getMonth()].slice(1)}{" "}
-                {new Date().getFullYear()}
-              </p>
             </div>
           </div>
 
-          {/* Chart */}
-          <div className="mt-7 h-[120px]">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10, fill: "var(--ink-subtle)" }}
-                    tickLine={false}
-                    axisLine={false}
-                    interval={4}
-                  />
-                  <Tooltip
-                    formatter={(v) => [formatEuro(Number(v ?? 0)), "Cumulatief"]}
-                    contentStyle={{
-                      fontSize: 12,
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      background: "var(--surface)",
-                      color: "var(--ink)",
-                      boxShadow: "var(--shadow)",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="var(--accent)"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, fill: "var(--accent)" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm" style={{ color: "var(--ink-subtle)" }}>
-                Geen donaties in deze maand
-              </div>
-            )}
+          {/* Month nav */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <button onClick={prevMonth} style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center" }}>
+              <ChevronLeft size={14} color="var(--ink-muted)" />
+            </button>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", minWidth: 120, textAlign: "center" }}>
+              {MONTHS_FULL[chartMonth]} {chartYear}
+            </span>
+            <button onClick={nextMonth} disabled={isCurrentMonth} style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", opacity: isCurrentMonth ? 0.3 : 1 }}>
+              <ChevronRight size={14} color="var(--ink-muted)" />
+            </button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* ── Row 2: Leden + Ondernemers ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-        {/* Maandelijkse Leden */}
+          <Sparkline data={chartData} />
+        </Card>
+
+        {/* ── 2. Maandelijkse leden ── */}
         <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Maandelijkse leden
+          <div style={labelStyle}>Maandelijkse leden</div>
+          <div style={{ display: "flex", gap: 28, marginBottom: 16 }}>
+            <div>
+              <StatNum value={loading ? "…" : String(memberCount ?? 0)} size={30} />
+              <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>actieve leden</div>
             </div>
-            <div className="flex gap-10 mb-6">
-              <div>
-                <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
-                  {loading ? "…" : (memberCount ?? 0)}
-                </div>
-                <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>actieve leden</div>
-              </div>
-              <div>
-                <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
-                  {loading ? "…" : formatEuro(monthlyRecurring ?? 0)}
-                </div>
-                <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>per maand terugkerend</div>
-              </div>
+            <div>
+              <StatNum value={loading ? "…" : eur(monthlyRecurring ?? 0)} size={30} />
+              <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>per maand terugkerend</div>
             </div>
+          </div>
 
-            {topDonors.length > 0 && (
-              <>
-                <div className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--ink-muted)" }}>
-                  Top 5
-                </div>
-                <div className="border-t" style={{ borderColor: "var(--border)" }} />
-                {topDonors.map((d, i) => (
-                  <div
-                    key={d.id}
-                    className="flex items-center justify-between py-3"
-                    style={{ borderBottom: i < topDonors.length - 1 ? "1px solid var(--border)" : "none" }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-                        style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}
-                      >
-                        {i + 1}
-                      </span>
-                      <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>{d.name}</span>
-                      {d.type && d.type !== "Lid" && (
-                        <span
-                          className="text-[11px] px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}
-                        >
-                          {d.type}
-                        </span>
-                      )}
+          {topDonors.length > 0 ? (
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+              <div style={{ ...labelStyle, marginBottom: 8 }}>Top 5</div>
+              {topDonors.map((m, i) => (
+                <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: i < topDonors.length - 1 ? "1px solid var(--border)" : "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--accent-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent-dark)", flexShrink: 0 }}>
+                      {i + 1}
                     </div>
-                    <span className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
-                      {formatEuro(d.amount)}
-                    </span>
+                    <span style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500 }}>{displayName(m)}</span>
+                    {m.membership_type && m.membership_type !== "lid" && (
+                      <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 99, background: "var(--accent-light)", color: "var(--accent-dark)", fontWeight: 600 }}>
+                        {m.membership_type}
+                      </span>
+                    )}
                   </div>
-                ))}
-              </>
-            )}
-
-            {topDonors.length === 0 && !loading && (
-              <p className="text-sm py-4" style={{ color: "var(--ink-subtle)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent-dark)" }}>
+                    {eur(Number(m.monthly_amount ?? 0))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+              <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>
                 Nog geen leden met maandbedrag.{" "}
                 <Link href="/members" style={{ color: "var(--accent-dark)" }}>Voeg leden toe →</Link>
               </p>
-            )}
-          </CardContent>
+            </div>
+          )}
         </Card>
 
-        {/* Ondernemers */}
+        {/* ── 3. Ondernemers ── */}
         <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Ondernemers
-            </div>
-            <div className="py-8 text-center">
-              <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>Ondernemer module komt binnenkort.</p>
-              <Link
-                href="/ondernemers"
-                className="inline-block mt-3 text-sm font-medium"
-                style={{ color: "var(--accent-dark)" }}
-              >
-                Bekijk ondernemers →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Row 3: Evenementen + Toezeggingen ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Aankomende evenementen */}
-        <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Aankomende evenementen
-            </div>
-            <div className="py-8 text-center">
-              <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>Evenementen module komt binnenkort.</p>
-              <Link
-                href="/evenementen"
-                className="inline-block mt-3 text-sm font-medium"
-                style={{ color: "var(--accent-dark)" }}
-              >
-                Bekijk evenementen →
-              </Link>
-            </div>
-          </CardContent>
+          <div style={labelStyle}>Ondernemers</div>
+          <div style={{ padding: "20px 0", textAlign: "center" }}>
+            <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
+            <Link href="/ondernemers" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
+              Bekijk ondernemers →
+            </Link>
+          </div>
         </Card>
 
-        {/* Toezeggingen */}
+        {/* ── 4. Aankomende evenementen ── */}
         <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Toezeggingen
-            </div>
-            <div className="py-8 text-center">
-              <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>Toezeggingen module komt binnenkort.</p>
-              <Link
-                href="/toezeggingen"
-                className="inline-block mt-3 text-sm font-medium"
-                style={{ color: "var(--accent-dark)" }}
-              >
-                Bekijk toezeggingen →
-              </Link>
-            </div>
-          </CardContent>
+          <div style={labelStyle}>Aankomende evenementen</div>
+          <div style={{ padding: "20px 0", textAlign: "center" }}>
+            <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
+            <Link href="/evenementen" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
+              Bekijk evenementen →
+            </Link>
+          </div>
         </Card>
+
+        {/* ── 5. Toezeggingen ── */}
+        <Card>
+          <div style={labelStyle}>Toezeggingen</div>
+          <div style={{ padding: "20px 0", textAlign: "center" }}>
+            <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
+            <Link href="/toezeggingen" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
+              Bekijk toezeggingen →
+            </Link>
+          </div>
+        </Card>
+
       </div>
     </AppShell>
   );

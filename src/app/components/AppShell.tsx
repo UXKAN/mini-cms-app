@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Shield,
   LayoutDashboard,
   Users,
   Briefcase,
@@ -11,22 +10,21 @@ import {
   FileCheck,
   Calendar,
   LogOut,
+  Plus,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import { useCurrentOrg } from "../lib/org";
 import { OrgContext } from "../lib/orgContext";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const nav = [
-  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/members", label: "Leden", Icon: Users },
-  { href: "/ondernemers", label: "Ondernemers", Icon: Briefcase },
-  { href: "/donations", label: "Donaties", Icon: Heart },
+  { href: "/dashboard",    label: "Dashboard",    Icon: LayoutDashboard },
+  { href: "/members",      label: "Leden",        Icon: Users },
+  { href: "/ondernemers",  label: "Ondernemers",  Icon: Briefcase },
+  { href: "/donations",    label: "Donaties",     Icon: Heart },
   { href: "/toezeggingen", label: "Toezeggingen", Icon: FileCheck },
-  { href: "/evenementen", label: "Evenementen", Icon: Calendar },
+  { href: "/evenementen",  label: "Evenementen",  Icon: Calendar },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -40,7 +38,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   if (authLoading || orgLoading || !user) {
-    return <main className="p-10 text-muted-foreground">Laden...</main>;
+    return <main style={{ padding: 40, color: "var(--ink-muted)" }}>Laden...</main>;
   }
 
   if (!org) return null;
@@ -53,18 +51,43 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <OrgContext.Provider value={org}>
-      <div className="flex min-h-screen">
+      <div style={{ display: "flex", minHeight: "100vh" }}>
+
         {/* ── Sidebar ── */}
-        <aside className="w-[220px] bg-card flex flex-col sticky top-0 h-screen shrink-0" style={{ borderRight: "1px solid var(--border)" }}>
+        <aside style={{
+          width: "var(--sidebar-w, 220px)",
+          minHeight: "100vh",
+          background: "var(--surface)",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          flexShrink: 0,
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowY: "auto",
+        }}>
+
           {/* Logo */}
-          <div className="px-4 pt-6 pb-4">
-            <div className="flex items-center gap-2.5">
-              <Shield size={20} className="text-primary shrink-0" />
+          <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {/* Green square logo */}
+              <div style={{
+                width: 30, height: 30,
+                borderRadius: 8,
+                background: "var(--accent)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+              </div>
               <div>
-                <div className="font-sans text-[13px] font-bold text-foreground leading-tight">
-                  Nieuwe Moskee
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 }}>
+                  {org.name ?? "Nieuwe Moskee"}
                 </div>
-                <div className="text-[9px] text-muted-foreground tracking-widest uppercase mt-0.5">
+                <div style={{ fontSize: 10, color: "var(--ink-subtle)", letterSpacing: "0.05em" }}>
                   ANBI Dashboard
                 </div>
               </div>
@@ -72,39 +95,62 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Nieuwe donatie CTA */}
-          <div className="px-3 pb-3">
-            <Button
-              className="w-full text-sm"
-              size="sm"
+          <div style={{ padding: "14px 12px 10px" }}>
+            <button
               onClick={() => {}}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                background: "var(--accent)",
+                color: "white",
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                fontFamily: "var(--font-sans)",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                boxShadow: "0 2px 8px oklch(0.52 0.13 165 / 0.28)",
+              }}
             >
-              + Nieuwe donatie
-            </Button>
+              <Plus size={15} color="white" />
+              Nieuwe donatie
+            </button>
           </div>
 
-          <Separator />
+          {/* Divider */}
+          <div style={{ height: 1, background: "var(--border)", margin: "0 12px" }} />
 
           {/* Nav */}
-          <nav className="flex-1 px-2 py-2 flex flex-col gap-0.5 overflow-y-auto">
+          <nav style={{ flex: 1, padding: "4px 8px", display: "flex", flexDirection: "column" }}>
             {nav.map(({ href, label, Icon }) => {
-              const active =
-                pathname === href || pathname.startsWith(href + "/");
+              const active = pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={[
-                    "flex items-center gap-2.5 px-3 py-2.5 rounded-[7px] text-[13px] font-medium transition-colors no-underline",
-                    active
-                      ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
-                      : "text-foreground hover:bg-background",
-                  ].join(" ")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "9px 10px",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? "var(--accent-dark)" : "var(--ink)",
+                    background: active ? "var(--accent-light)" : "transparent",
+                    textDecoration: "none",
+                    transition: "background 0.12s, color 0.12s",
+                    cursor: "pointer",
+                  }}
                 >
                   <Icon
-                    size={14}
-                    className={
-                      active ? "text-[var(--accent-dark)]" : "text-muted-foreground"
-                    }
+                    size={15}
+                    color={active ? "var(--accent-dark)" : "var(--ink-muted)"}
+                    style={{ flexShrink: 0 }}
                   />
                   {label}
                 </Link>
@@ -112,38 +158,65 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
+          {/* Divider */}
+          <div style={{ height: 1, background: "var(--border)", margin: "0 12px" }} />
+
           {/* User section */}
-          <Separator />
-          <div className="px-3 py-3 flex flex-col gap-2">
-            <div className="flex items-center gap-2 px-1">
-              <Avatar className="h-7 w-7 shrink-0">
-                <AvatarFallback className="text-[11px] bg-[var(--accent-light)] text-[var(--accent-dark)]">
+          <div style={{ padding: "12px 12px 14px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "4px 2px", marginBottom: 4 }}>
+              <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
+                <AvatarFallback style={{
+                  fontSize: 11, fontWeight: 600,
+                  background: "var(--accent-light)",
+                  color: "var(--accent-dark)",
+                }}>
                   {initial}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0">
-                <div className="text-[12px] font-medium text-foreground truncate">
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {userLabel}
                 </div>
-                <div className="text-[10px] text-muted-foreground truncate">
+                <div style={{ fontSize: 11, color: "var(--ink-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {user.email}
                 </div>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-muted-foreground gap-2 text-[12px] h-8 hover:bg-[var(--accent-light)] hover:text-[var(--accent-dark)]"
+            <button
               onClick={handleLogout}
+              style={{
+                width: "100%",
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "7px 8px",
+                background: "transparent",
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                fontSize: 12,
+                color: "var(--ink-muted)",
+                cursor: "pointer",
+                fontFamily: "var(--font-sans)",
+                transition: "background 0.12s, color 0.12s",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "var(--accent-light)";
+                e.currentTarget.style.color = "var(--accent-dark)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "var(--ink-muted)";
+              }}
             >
-              <LogOut size={12} />
+              <LogOut size={13} />
               Uitloggen
-            </Button>
+            </button>
           </div>
         </aside>
 
         {/* ── Main content ── */}
-        <main className="flex-1 px-14 py-10 min-w-0">{children}</main>
+        <main style={{ flex: 1, padding: 32, overflowY: "auto", minWidth: 0 }}>
+          {children}
+        </main>
+
       </div>
     </OrgContext.Provider>
   );
