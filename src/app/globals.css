@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 /* Maps CSS vars → Tailwind v4 utility classes */
 @theme inline {
@@ -21,6 +22,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-ring-offset: var(--background);
 }
 
 :root {
@@ -66,6 +68,7 @@
   --destructive-foreground: oklch(0.99 0.002 75);
   --input: oklch(0.89 0.009 75);
   --ring: oklch(0.52 0.13 165);
+  --ring-offset: oklch(0.968 0.007 75);
   /* Note: --border, --radius, --accent already defined above */
 }
 
