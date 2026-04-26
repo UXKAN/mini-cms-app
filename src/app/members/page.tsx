@@ -8,7 +8,7 @@ import { useOrg } from "../lib/orgContext";
 import type { Member, MemberStatus } from "../lib/types";
 import { Button } from "@/components/ui/button";
 import AppShell from "../components/AppShell";
-import { PageLayout, EmptyState, Badge } from "@/components/crm";
+import { PageLayout, EmptyState, Badge, FormLabel, RowActions } from "@/components/crm";
 import {
   Table,
   TableBody,
@@ -24,7 +24,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
   { value: "active", label: "Actief" },
@@ -153,21 +152,10 @@ function MembersInner() {
                     {m.status === "cancelled" && <Badge variant="opgezegd">Opgezegd</Badge>}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEdit(m)}
-                    >
-                      Bewerken
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(m.id)}
-                    >
-                      Verwijderen
-                    </Button>
+                    <RowActions
+                      onEdit={() => openEdit(m)}
+                      onDelete={() => handleDelete(m.id)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -376,7 +364,7 @@ function MemberForm({
           className={inputCls}
         />
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Status</Label>
+          <FormLabel>Status</FormLabel>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as MemberStatus)}
@@ -410,7 +398,7 @@ function MemberForm({
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuleren
         </Button>
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving} className="crm-button-modal-primary">
           {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
         </Button>
       </div>
