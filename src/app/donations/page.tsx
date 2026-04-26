@@ -19,6 +19,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -318,14 +319,14 @@ function DonationForm({
         </div>
       )}
 
-      <div className="flex gap-2 justify-end">
+      <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuleren
         </Button>
         <Button type="submit" disabled={saving} variant="modalPrimary">
           {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
