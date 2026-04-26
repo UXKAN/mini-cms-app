@@ -9,12 +9,14 @@ import {
   SearchInput,
   DataTable,
   FormLabel,
+  SectionLabel,
   type DataTableColumn,
 } from "@/components/crm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -273,17 +275,17 @@ function OndernemersInner() {
                 </div>
               )}
 
-              {/* Close button */}
-              <div style={{ marginTop: 20 }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => setSelected(null)}
-                >
-                  Sluiten
-                </Button>
-              </div>
             </div>
           )}
+
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setSelected(null)}
+            >
+              Sluiten
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -296,148 +298,241 @@ function OndernemersInner() {
             </DialogTitle>
           </DialogHeader>
 
-          <div>
-            {/* Text fields */}
-            {(
-              [
-                ["naam", "Bedrijfsnaam"],
-                ["email", "E-mail"],
-                ["tel", "Telefoon"],
-                ["adres", "Adres"],
-                ["postcode_plaats", "Postcode & Woonplaats"],
-                ["iban", "IBAN"],
-                ["bedrag_maand", "Bedrag per maand (€)"],
-              ] as [keyof NewOndernemer, string][]
-            ).map(([key, label]) => (
-              <div key={key} style={{ marginBottom: 16 }}>
-                <FormLabel>{label}</FormLabel>
-                <Input
-                  value={newO[key] as string}
-                  onChange={(e) =>
-                    setNewO((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                />
-              </div>
-            ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
-            {/* Sponsor / Projecten */}
-            <div style={{ marginBottom: 16 }}>
-              <FormLabel>Sponsor / Projecten</FormLabel>
-              <Input
-                value={newO.tags}
-                placeholder="Ramadan, Bouw, Evenementen"
-                onChange={(e) =>
-                  setNewO((prev) => ({ ...prev, tags: e.target.value }))
-                }
-              />
-              <p
-                style={{
-                  fontSize: 11,
-                  color: "var(--ink-subtle)",
-                  marginTop: 4,
-                }}
-              >
-                Meerdere labels scheiden met komma&apos;s
-              </p>
+            {/* Group 1 — Bedrijfsgegevens */}
+            <div>
+              <SectionLabel mb={12}>Bedrijfsgegevens</SectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <FormLabel>Bedrijfsnaam</FormLabel>
+                  <Input
+                    value={newO.naam}
+                    onChange={(e) =>
+                      setNewO((prev) => ({ ...prev, naam: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <FormLabel>E-mail</FormLabel>
+                  <Input
+                    type="email"
+                    value={newO.email}
+                    onChange={(e) =>
+                      setNewO((prev) => ({ ...prev, email: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <FormLabel>Telefoon</FormLabel>
+                  <Input
+                    value={newO.tel}
+                    onChange={(e) =>
+                      setNewO((prev) => ({ ...prev, tel: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Spaarpot radio cards */}
-            <div style={{ marginBottom: 20 }}>
-              <FormLabel>Spaarpot</FormLabel>
-              <div style={{ display: "flex", gap: 10 }}>
-                {([true, false] as const).map((val) => {
-                  const active = newO.spaarpot === val;
-                  return (
-                    <label
-                      key={String(val)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "9px 16px",
-                        border: `1.5px solid ${
-                          active ? "var(--accent)" : "var(--border)"
-                        }`,
-                        borderRadius: "var(--radius-sm)",
-                        background: active
-                          ? "var(--accent-light)"
-                          : "var(--surface)",
-                        cursor: "pointer",
-                        transition: "all 0.15s",
-                        flex: 1,
-                        justifyContent: "center",
-                      }}
-                    >
-                      {/* Custom radio dot */}
-                      <div
-                        style={{
-                          width: 15,
-                          height: 15,
-                          borderRadius: "50%",
-                          border: `2px solid ${
-                            active ? "var(--accent)" : "var(--border)"
-                          }`,
-                          background: active ? "var(--accent)" : "transparent",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {active && (
+            {/* Group 2 — Adres */}
+            <div>
+              <SectionLabel mb={12}>Adres</SectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <FormLabel>Adres</FormLabel>
+                  <Input
+                    value={newO.adres}
+                    onChange={(e) =>
+                      setNewO((prev) => ({ ...prev, adres: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <FormLabel>Postcode</FormLabel>
+                    <Input
+                      value={newO.postcode_plaats.split(" ")[0] ?? ""}
+                      onChange={(e) =>
+                        setNewO((prev) => ({
+                          ...prev,
+                          postcode_plaats:
+                            e.target.value +
+                            " " +
+                            (prev.postcode_plaats.split(" ").slice(1).join(" ") ?? ""),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <FormLabel>Woonplaats</FormLabel>
+                    <Input
+                      value={newO.postcode_plaats.split(" ").slice(1).join(" ")}
+                      onChange={(e) =>
+                        setNewO((prev) => ({
+                          ...prev,
+                          postcode_plaats:
+                            (prev.postcode_plaats.split(" ")[0] ?? "") +
+                            " " +
+                            e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Group 3 — Betaling */}
+            <div>
+              <SectionLabel mb={12}>Betaling</SectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <FormLabel>IBAN</FormLabel>
+                  <Input
+                    value={newO.iban}
+                    onChange={(e) =>
+                      setNewO((prev) => ({ ...prev, iban: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <FormLabel>Bedrag per maand (€)</FormLabel>
+                  <Input
+                    type="number"
+                    value={newO.bedrag_maand}
+                    onChange={(e) =>
+                      setNewO((prev) => ({ ...prev, bedrag_maand: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Group 4 — Sponsoring */}
+            <div>
+              <SectionLabel mb={12}>Sponsoring</SectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Sponsor / Projecten */}
+                <div>
+                  <FormLabel>Sponsor / Projecten</FormLabel>
+                  <Input
+                    value={newO.tags}
+                    placeholder="Ramadan, Bouw, Evenementen"
+                    onChange={(e) =>
+                      setNewO((prev) => ({ ...prev, tags: e.target.value }))
+                    }
+                  />
+                  <p
+                    style={{
+                      fontSize: 11,
+                      color: "var(--ink-subtle)",
+                      marginTop: 4,
+                    }}
+                  >
+                    Meerdere labels scheiden met komma&apos;s
+                  </p>
+                </div>
+
+                {/* Spaarpot radio cards */}
+                <div>
+                  <FormLabel>Spaarpot</FormLabel>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    {([true, false] as const).map((val) => {
+                      const active = newO.spaarpot === val;
+                      return (
+                        <label
+                          key={String(val)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "9px 16px",
+                            border: `1.5px solid ${
+                              active ? "var(--accent)" : "var(--border)"
+                            }`,
+                            borderRadius: "var(--radius-sm)",
+                            background: active
+                              ? "var(--accent-light)"
+                              : "var(--surface)",
+                            cursor: "pointer",
+                            transition: "all 0.15s",
+                            flex: 1,
+                            justifyContent: "center",
+                          }}
+                        >
+                          {/* Custom radio dot */}
                           <div
                             style={{
-                              width: 5,
-                              height: 5,
+                              width: 15,
+                              height: 15,
                               borderRadius: "50%",
-                              background: "white",
+                              border: `2px solid ${
+                                active ? "var(--accent)" : "var(--border)"
+                              }`,
+                              background: active ? "var(--accent)" : "transparent",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
                             }}
+                          >
+                            {active && (
+                              <div
+                                style={{
+                                  width: 5,
+                                  height: 5,
+                                  borderRadius: "50%",
+                                  background: "white",
+                                }}
+                              />
+                            )}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 500,
+                              color: "var(--ink)",
+                            }}
+                          >
+                            {val ? "Ja — heeft spaarpot" : "Nee — geen spaarpot"}
+                          </span>
+                          <input
+                            type="radio"
+                            name="spaarpot"
+                            checked={active}
+                            onChange={() =>
+                              setNewO((prev) => ({ ...prev, spaarpot: val }))
+                            }
+                            style={{ display: "none" }}
                           />
-                        )}
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: "var(--ink)",
-                        }}
-                      >
-                        {val ? "Ja — heeft spaarpot" : "Nee — geen spaarpot"}
-                      </span>
-                      <input
-                        type="radio"
-                        name="spaarpot"
-                        checked={active}
-                        onChange={() =>
-                          setNewO((prev) => ({ ...prev, spaarpot: val }))
-                        }
-                        style={{ display: "none" }}
-                      />
-                    </label>
-                  );
-                })}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button
-                variant="modalPrimary"
-                onClick={handleSave}
-              >
-                Ondernemer toevoegen
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setAddOpen(false);
-                  setNewO(EMPTY_NEW);
-                }}
-              >
-                Annuleren
-              </Button>
-            </div>
           </div>
+
+          <DialogFooter>
+            <Button
+              variant="modalPrimary"
+              onClick={handleSave}
+            >
+              Ondernemer toevoegen
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddOpen(false);
+                setNewO(EMPTY_NEW);
+              }}
+            >
+              Annuleren
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageLayout>
