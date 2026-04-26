@@ -8,7 +8,7 @@ import { useOrg } from "../lib/orgContext";
 import type { Member, MemberStatus } from "../lib/types";
 import { Button } from "@/components/ui/button";
 import AppShell from "../components/AppShell";
-import { PageLayout, EmptyState, Badge, Card, FormLabel, RowActions, Select } from "@/components/crm";
+import { PageLayout, EmptyState, Badge, Card, FormLabel, RowActions, Select, SectionLabel } from "@/components/crm";
 import {
   Table,
   TableBody,
@@ -20,6 +20,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -370,96 +371,130 @@ function MemberForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          placeholder="Voornaam *"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          placeholder="Achternaam"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          placeholder="Telefoon"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          placeholder="Adres"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className={`${inputCls} col-span-2`}
-        />
-        <Input
-          placeholder="Postcode"
-          value={postcode}
-          onChange={(e) => setPostcode(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          placeholder="Woonplaats"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          placeholder="IBAN"
-          value={iban}
-          onChange={(e) => setIban(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          placeholder="Lidmaatschapstype"
-          value={membershipType}
-          onChange={(e) => setMembershipType(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="Maandbedrag"
-          value={monthlyAmount}
-          onChange={(e) => setMonthlyAmount(e.target.value)}
-          className={inputCls}
-        />
-        <Input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className={inputCls}
-        />
-        <div className="flex flex-col gap-1.5">
-          <FormLabel>Status</FormLabel>
-          <Select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as MemberStatus)}
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {/* 1. Naam */}
+        <div>
+          <SectionLabel mb={12}>Naam</SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              placeholder="Voornaam *"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className={inputCls}
+            />
+            <Input
+              placeholder="Achternaam"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className={inputCls}
+            />
+          </div>
         </div>
-        <Input
-          placeholder="Notities"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className={`${inputCls} col-span-2`}
-        />
+
+        {/* 2. Contactgegevens */}
+        <div>
+          <SectionLabel mb={12}>Contactgegevens</SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              type="email"
+              placeholder="E-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputCls}
+            />
+            <Input
+              placeholder="Telefoon"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        {/* 3. Adres */}
+        <div>
+          <SectionLabel mb={12}>Adres</SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              placeholder="Adres"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className={`${inputCls} col-span-2`}
+            />
+            <Input
+              placeholder="Postcode"
+              value={postcode}
+              onChange={(e) => setPostcode(e.target.value)}
+              className={inputCls}
+            />
+            <Input
+              placeholder="Woonplaats"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        {/* 4. Lidmaatschap */}
+        <div>
+          <SectionLabel mb={12}>Lidmaatschap</SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              placeholder="IBAN"
+              value={iban}
+              onChange={(e) => setIban(e.target.value)}
+              className={inputCls}
+            />
+            <Input
+              placeholder="Lidmaatschapstype"
+              value={membershipType}
+              onChange={(e) => setMembershipType(e.target.value)}
+              className={inputCls}
+            />
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Maandbedrag"
+              value={monthlyAmount}
+              onChange={(e) => setMonthlyAmount(e.target.value)}
+              className={inputCls}
+            />
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={inputCls}
+            />
+            <div className="col-span-2">
+              <FormLabel>Status</FormLabel>
+              <Select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as MemberStatus)}
+              >
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. Notities */}
+        <div>
+          <SectionLabel mb={12}>Notities</SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              placeholder="Notities"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className={`${inputCls} col-span-2`}
+            />
+          </div>
+        </div>
       </div>
 
       {formError && (
@@ -471,14 +506,14 @@ function MemberForm({
         </div>
       )}
 
-      <div className="flex gap-2 mt-5 justify-end">
+      <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuleren
         </Button>
         <Button type="submit" disabled={saving} variant="modalPrimary">
           {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
