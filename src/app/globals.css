@@ -39,6 +39,7 @@
   --accent: oklch(0.52 0.13 165);
   --accent-light: oklch(0.94 0.04 165);
   --accent-dark: oklch(0.40 0.13 165);
+  --neutral-light: oklch(0.94 0.005 75);
   --error: oklch(0.55 0.18 25);
   --error-light: oklch(0.95 0.04 25);
   --success: oklch(0.55 0.15 150);

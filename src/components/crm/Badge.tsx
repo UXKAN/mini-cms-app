@@ -2,8 +2,9 @@ type BadgeVariant = "actief" | "inactief" | "prospect" | "opgezegd" | "accent";
 
 const VARIANT_STYLES: Record<BadgeVariant, { background: string; color: string }> = {
   actief:   { background: "var(--accent-light)", color: "var(--accent-dark)" },
+  // "accent" is a semantic alias for non-status highlights (e.g. tag: "Ondernemer")
   accent:   { background: "var(--accent-light)", color: "var(--accent-dark)" },
-  inactief: { background: "oklch(0.94 0.005 75)", color: "var(--ink-muted)" },
+  inactief: { background: "var(--neutral-light)", color: "var(--ink-muted)" },
   prospect: { background: "var(--warn-light)",   color: "var(--warn)" },
   opgezegd: { background: "var(--error-light)",  color: "var(--error)" },
 };
@@ -17,6 +18,7 @@ export function Badge({ variant, children }: BadgeProps) {
   const { background, color } = VARIANT_STYLES[variant];
   return (
     <span
+      role="status"
       style={{
         display: "inline-block",
         fontSize: 11,

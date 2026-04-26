@@ -25,7 +25,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
           {description}
         </p>
       )}
-      {action && <div>{action}</div>}
+      {action}
     </Card>
   );
 }
