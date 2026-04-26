@@ -518,12 +518,6 @@ function OndernemersInner() {
 
           <DialogFooter>
             <Button
-              variant="modalPrimary"
-              onClick={handleSave}
-            >
-              Ondernemer toevoegen
-            </Button>
-            <Button
               variant="outline"
               onClick={() => {
                 setAddOpen(false);
@@ -531,6 +525,12 @@ function OndernemersInner() {
               }}
             >
               Annuleren
+            </Button>
+            <Button
+              variant="modalPrimary"
+              onClick={handleSave}
+            >
+              Ondernemer toevoegen
             </Button>
           </DialogFooter>
         </DialogContent>

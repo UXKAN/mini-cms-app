@@ -248,7 +248,7 @@ function MembersInner() {
         open={modalMode === "add" || modalMode === "edit"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent size="lg">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>
               {modalMode === "edit" ? "Lid bewerken" : "Nieuw lid"}
@@ -370,7 +370,7 @@ function MemberForm({
   const inputCls = "h-10 text-sm";
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         {/* 1. Naam */}
         <div>
@@ -499,7 +499,7 @@ function MemberForm({
 
       {formError && (
         <div
-          className="p-3 rounded-[7px] mt-4 text-sm"
+          className="p-3 rounded-[7px] text-sm"
           style={{ background: "var(--error-light)", color: "var(--error)" }}
         >
           {formError}
