@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PageLayout, Card, Badge, SectionLabel, FormLabel, Select } from "@/components/crm";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import AppShell from "../components/AppShell";
 import { events, type AppEvent } from "@/app/lib/mockData";
@@ -148,6 +148,7 @@ function EvenementenInner() {
             <div>
               <FormLabel>Beschrijving</FormLabel>
               <textarea
+                className="crm-input"
                 value={newEv.beschrijving}
                 onChange={(e) => setNewEv((p) => ({ ...p, beschrijving: e.target.value }))}
                 rows={3}
@@ -155,7 +156,6 @@ function EvenementenInner() {
                 style={{
                   width: "100%",
                   padding: "9px 12px",
-                  border: "1.5px solid var(--border)",
                   borderRadius: "var(--radius-sm)",
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
@@ -166,17 +166,16 @@ function EvenementenInner() {
                 }}
               />
             </div>
-
-            {/* Buttons */}
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button variant="modalPrimary" onClick={handleSave}>
-                Evenement toevoegen
-              </Button>
-              <Button variant="outline" onClick={handleClose}>
-                Annuleren
-              </Button>
-            </div>
           </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>
+              Annuleren
+            </Button>
+            <Button variant="modalPrimary" onClick={handleSave}>
+              Evenement toevoegen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageLayout>
