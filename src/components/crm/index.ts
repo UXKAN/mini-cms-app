@@ -7,3 +7,6 @@ export { EmptyState } from "./EmptyState";
 export { PageLayout } from "./PageLayout";
 export { FormLabel } from "./FormLabel";
 export { RowActions } from "./RowActions";
+export { SearchInput } from "./SearchInput";
+export { DataTable } from "./DataTable";
+export type { DataTableColumn } from "./DataTable";
