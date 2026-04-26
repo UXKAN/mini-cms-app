@@ -8,15 +8,15 @@ type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
  * CRM-styled native <select>.
  *
  * Replaces the inline selectStyle/selectCls patterns scattered across pages.
- * Visual styling (1.5px border, focus glow) comes from the global selector
- * `select:not([class*="shadcn"])` in globals.css — keep this in sync if those
- * rules ever change.
+ * Uses the `crm-input` className to opt into the 1.5px border + green focus
+ * glow defined in globals.css.
  */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  function Select({ style, children, ...props }, ref) {
+  function Select({ style, className, children, ...props }, ref) {
     return (
       <select
         ref={ref}
+        className={`crm-input ${className ?? ""}`.trim()}
         style={{
           width: "100%",
           padding: "9px 12px",
@@ -26,7 +26,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           background: "var(--surface)",
           color: "var(--ink)",
           outline: "none",
-          // border + focus glow handled by globals.css
           ...style,
         }}
         {...props}
