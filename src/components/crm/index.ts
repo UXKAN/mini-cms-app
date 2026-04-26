@@ -5,3 +5,5 @@ export { StatCard } from "./StatCard";
 export { Badge } from "./Badge";
 export { EmptyState } from "./EmptyState";
 export { PageLayout } from "./PageLayout";
+export { FormLabel } from "./FormLabel";
+export { RowActions } from "./RowActions";
