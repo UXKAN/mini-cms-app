@@ -6,6 +6,7 @@ import { useAuth } from "../lib/useAuth";
 import { useOrg } from "../lib/orgContext";
 import type { DonationMethod, DonationWithMember, Member } from "../lib/types";
 import { Button } from "@/components/ui/button";
+import AppShell from "../components/AppShell";
 import { PageLayout, StatCard, EmptyState } from "@/components/crm";
 import {
   Table,
@@ -202,7 +203,11 @@ function DonationsInner() {
 }
 
 export default function DonationsPage() {
-  return <DonationsInner />;
+  return (
+    <AppShell>
+      <DonationsInner />
+    </AppShell>
+  );
 }
 
 function DonationForm({

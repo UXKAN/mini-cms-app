@@ -7,6 +7,7 @@ import MemberImporter from "../components/MemberImporter";
 import { useOrg } from "../lib/orgContext";
 import type { Member, MemberStatus } from "../lib/types";
 import { Button } from "@/components/ui/button";
+import AppShell from "../components/AppShell";
 import { PageLayout, EmptyState, Badge } from "@/components/crm";
 import {
   Table,
@@ -216,7 +217,11 @@ function MembersInner() {
 }
 
 export default function MembersPage() {
-  return <MembersInner />;
+  return (
+    <AppShell>
+      <MembersInner />
+    </AppShell>
+  );
 }
 
 function MemberForm({

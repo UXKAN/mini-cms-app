@@ -1,4 +1,3 @@
-import AppShell from "@/app/components/AppShell";
 import { PageHeader } from "./PageHeader";
 
 type PageLayoutProps = {
@@ -10,7 +9,7 @@ type PageLayoutProps = {
 
 export function PageLayout({ title, subtitle, action, children }: PageLayoutProps) {
   return (
-    <AppShell>
+    <div>
       <div
         style={{
           display: "flex",
@@ -25,6 +24,6 @@ export function PageLayout({ title, subtitle, action, children }: PageLayoutProp
         {action && <div style={{ paddingBottom: 24 }}>{action}</div>}
       </div>
       {children}
-    </AppShell>
+    </div>
   );
 }
