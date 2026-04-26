@@ -38,8 +38,6 @@ const MONTHS_SHORT = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt
 
 /* ─── stat number ─────────────────────────────────── */
 
-/* ─── stat number ─────────────────────────────────── */
-
 function StatNum({ value, size = 30 }: { value: string; size?: number }) {
   return (
     <span style={{
