@@ -7,7 +7,7 @@ import { useOrg } from "../lib/orgContext";
 import type { DonationMethod, DonationWithMember, Member } from "../lib/types";
 import { Button } from "@/components/ui/button";
 import AppShell from "../components/AppShell";
-import { PageLayout, StatCard, EmptyState } from "@/components/crm";
+import { PageLayout, StatCard, EmptyState, FormLabel, RowActions } from "@/components/crm";
 import {
   Table,
   TableBody,
@@ -23,7 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const METHOD_LABELS: Record<DonationMethod, string> = {
   cash: "Contant",
@@ -99,13 +98,11 @@ function DonationsInner() {
       action={donations.length > 0 ? <Button onClick={openAdd}>Donatie toevoegen</Button> : undefined}
     >
       {/* stat cards */}
-      {donations.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 20 }}>
-          <StatCard label="Totaal dit jaar" value={formatEuro(yearTotal)} />
-          <StatCard label="Totaal (alles)"  value={formatEuro(total)} />
-          <StatCard label="Aantal donaties" value={String(donations.length)} />
-        </div>
-      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 20 }}>
+        <StatCard label="Totaal dit jaar" value={formatEuro(yearTotal)} />
+        <StatCard label="Totaal (alles)"  value={formatEuro(total)} />
+        <StatCard label="Aantal donaties" value={String(donations.length)} />
+      </div>
 
       {error && (
         <div
@@ -161,17 +158,10 @@ function DonationsInner() {
                     {d.notes ?? "—"}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
-                      Bewerken
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(d.id)}
-                    >
-                      Verwijderen
-                    </Button>
+                    <RowActions
+                      onEdit={() => openEdit(d)}
+                      onDelete={() => handleDelete(d.id)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -266,7 +256,7 @@ function DonationForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Bedrag (EUR) *</Label>
+          <FormLabel required>Bedrag (EUR)</FormLabel>
           <Input
             type="number"
             step="0.01"
@@ -279,7 +269,7 @@ function DonationForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Datum *</Label>
+          <FormLabel required>Datum</FormLabel>
           <Input
             type="date"
             value={donatedAt}
@@ -289,7 +279,7 @@ function DonationForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Methode</Label>
+          <FormLabel>Methode</FormLabel>
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value as DonationMethod)}
@@ -301,7 +291,7 @@ function DonationForm({
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Lid (optioneel)</Label>
+          <FormLabel>Lid (optioneel)</FormLabel>
           <select
             value={memberId}
             onChange={(e) => setMemberId(e.target.value)}
@@ -314,7 +304,7 @@ function DonationForm({
           </select>
         </div>
         <div className="flex flex-col gap-1.5 col-span-2">
-          <Label className="text-xs text-muted-foreground">Notities</Label>
+          <FormLabel>Notities</FormLabel>
           <Input
             placeholder="Omschrijving, doel, etc."
             value={notes}
@@ -337,7 +327,7 @@ function DonationForm({
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuleren
         </Button>
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving} className="crm-button-modal-primary">
           {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
         </Button>
       </div>
