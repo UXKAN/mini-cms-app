@@ -18,7 +18,6 @@ export function Badge({ variant, children }: BadgeProps) {
   const { background, color } = VARIANT_STYLES[variant];
   return (
     <span
-      role="status"
       style={{
         display: "inline-block",
         fontSize: 11,
