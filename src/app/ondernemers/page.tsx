@@ -198,11 +198,9 @@ function OndernemersInner() {
 
       {/* ── Detail modal ───────────────────────────────────────────────── */}
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
-        <DialogContent style={{ maxWidth: 500 }}>
+        <DialogContent size="md">
           <DialogHeader>
-            <DialogTitle
-              style={{ fontFamily: "var(--font-serif)", fontWeight: 400 }}
-            >
+            <DialogTitle>
               {selected?.naam ?? ""}
             </DialogTitle>
           </DialogHeader>
@@ -291,11 +289,9 @@ function OndernemersInner() {
 
       {/* ── Add modal ──────────────────────────────────────────────────── */}
       <Dialog open={addOpen} onOpenChange={(open) => { if (!open) { setAddOpen(false); setNewO(EMPTY_NEW); } }}>
-        <DialogContent style={{ maxWidth: 500 }}>
+        <DialogContent size="md">
           <DialogHeader>
-            <DialogTitle
-              style={{ fontFamily: "var(--font-serif)", fontWeight: 400 }}
-            >
+            <DialogTitle>
               Ondernemer toevoegen
             </DialogTitle>
           </DialogHeader>
@@ -313,7 +309,7 @@ function OndernemersInner() {
                 ["bedrag_maand", "Bedrag per maand (€)"],
               ] as [keyof NewOndernemer, string][]
             ).map(([key, label]) => (
-              <div key={key} style={{ marginBottom: 14 }}>
+              <div key={key} style={{ marginBottom: 16 }}>
                 <FormLabel>{label}</FormLabel>
                 <Input
                   value={newO[key] as string}
@@ -325,7 +321,7 @@ function OndernemersInner() {
             ))}
 
             {/* Sponsor / Projecten */}
-            <div style={{ marginBottom: 14 }}>
+            <div style={{ marginBottom: 16 }}>
               <FormLabel>Sponsor / Projecten</FormLabel>
               <Input
                 value={newO.tags}
@@ -424,9 +420,9 @@ function OndernemersInner() {
             </div>
 
             {/* Action buttons */}
-            <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ display: "flex", gap: 8 }}>
               <Button
-                className="crm-button-modal-primary"
+                variant="modalPrimary"
                 onClick={handleSave}
               >
                 Ondernemer toevoegen
