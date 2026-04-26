@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PageLayout, Card, Badge, SectionLabel, FormLabel } from "@/components/crm";
+import { PageLayout, Card, Badge, SectionLabel, FormLabel, Select } from "@/components/crm";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,7 @@ function EvenementenInner() {
       subtitle={`${events.length} evenementen gepland`}
       action={
         <Button
-          className="crm-button-modal-primary"
+          variant="modalPrimary"
           onClick={() => setAddOpen(true)}
         >
           + Evenement toevoegen
@@ -101,12 +101,12 @@ function EvenementenInner() {
 
       {/* Add modal */}
       <Dialog open={addOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-        <DialogContent style={{ maxWidth: 440 }}>
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Evenement toevoegen</DialogTitle>
           </DialogHeader>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Titel */}
             <div>
               <FormLabel>Titel</FormLabel>
@@ -132,28 +132,16 @@ function EvenementenInner() {
             {/* Type */}
             <div>
               <FormLabel>Type</FormLabel>
-              <select
+              <Select
                 value={newEv.type}
                 onChange={(e) =>
                   setNewEv((p) => ({ ...p, type: e.target.value as AppEvent["type"] }))
                 }
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  border: "1.5px solid var(--border)",
-                  borderRadius: "var(--radius-sm)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 14,
-                  background: "var(--surface)",
-                  color: "var(--ink)",
-                  outline: "none",
-                  cursor: "pointer",
-                }}
               >
                 <option value="religieus">Religieus</option>
                 <option value="fundraising">Fundraising</option>
                 <option value="algemeen">Algemeen</option>
-              </select>
+              </Select>
             </div>
 
             {/* Beschrijving */}
@@ -180,8 +168,8 @@ function EvenementenInner() {
             </div>
 
             {/* Buttons */}
-            <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
-              <Button className="crm-button-modal-primary" onClick={handleSave}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button variant="modalPrimary" onClick={handleSave}>
                 Evenement toevoegen
               </Button>
               <Button variant="outline" onClick={handleClose}>
