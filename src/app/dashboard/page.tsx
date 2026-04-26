@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import { useState } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -10,33 +8,26 @@ import {
   Tooltip,
   XAxis,
 } from "recharts";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../lib/useAuth";
+import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import AppShell from "../components/AppShell";
-import { Card, SectionLabel } from "@/components/crm";
-import type { Member } from "../lib/types";
+import { Card, SectionLabel, Badge } from "@/components/crm";
+import {
+  donors,
+  events,
+  promises,
+  donationsForMonth,
+  totalForMonth,
+  memberCount,
+  monthlyRecurring,
+  businessCount,
+  eur,
+} from "../lib/mockData";
 
-/* ─── helpers ─────────────────────────────────────── */
-
-function displayName(m: Member): string {
-  const combined = [m.first_name, m.last_name].filter(Boolean).join(" ").trim();
-  return combined || m.name || "—";
-}
-
-function eur(n: number) {
-  return n.toLocaleString("nl-NL", {
-    style: "currency", currency: "EUR",
-    minimumFractionDigits: 0, maximumFractionDigits: 0,
-  });
-}
-
+const MONTHS_NL = ["Jan","Feb","Mrt","Apr","Mei","Jun","Jul","Aug","Sep","Okt","Nov","Dec"];
 const MONTHS_FULL = [
   "Januari","Februari","Maart","April","Mei","Juni",
   "Juli","Augustus","September","Oktober","November","December",
 ];
-const MONTHS_SHORT = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
-
-/* ─── stat number ─────────────────────────────────── */
 
 function StatNum({ value, size = 30 }: { value: string; size?: number }) {
   return (
@@ -52,10 +43,7 @@ function StatNum({ value, size = 30 }: { value: string; size?: number }) {
   );
 }
 
-/* ─── delta badge ─────────────────────────────────── */
-
-function Delta({ pct }: { pct: number | null }) {
-  if (pct === null) return null;
+function Delta({ pct }: { pct: number }) {
   const up = pct >= 0;
   return (
     <span style={{
@@ -72,133 +60,367 @@ function Delta({ pct }: { pct: number | null }) {
   );
 }
 
-/* ─── sparkline chart ─────────────────────────────── */
+// ── Widget 1: Totale donaties ─────────────────────────────────────────────────
+function TotalDonationsWidget() {
+  const now = new Date();
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [viewYear, setViewYear] = useState(now.getFullYear());
 
-interface ChartPoint { label: string; amount: number }
+  const curTotal = totalForMonth(viewYear, viewMonth + 1);
+  const prevM = viewMonth === 0 ? 11 : viewMonth - 1;
+  const prevY = viewMonth === 0 ? viewYear - 1 : viewYear;
+  const prevTotal = totalForMonth(prevY, prevM + 1);
+  const growth = prevTotal > 0 ? ((curTotal - prevTotal) / prevTotal) * 100 : 0;
 
-function Sparkline({ data }: { data: ChartPoint[] }) {
-  if (data.every(d => d.amount === 0)) {
-    return (
-      <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: 12, color: "var(--ink-subtle)" }}>Geen data</span>
-      </div>
-    );
+  // Cumulative chart data per day in selected month
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const dayTotals = new Array(daysInMonth).fill(0);
+  donationsForMonth(viewYear, viewMonth + 1).forEach((d) => {
+    const day = Number(d.date.split("-")[2]);
+    dayTotals[day - 1] += d.amount;
+  });
+  let cum = 0;
+  const chartData = dayTotals.map((amt, i) => {
+    cum += amt;
+    return { label: String(i + 1), amount: cum };
+  });
+
+  // YTD total
+  let ytdTotal = 0;
+  for (let m = 1; m <= now.getMonth() + 1; m++) {
+    ytdTotal += totalForMonth(now.getFullYear(), m);
   }
+
+  const prev = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
+  };
+  const next = () => {
+    const nextM = viewMonth === 11 ? 0 : viewMonth + 1;
+    const nextY = viewMonth === 11 ? viewYear + 1 : viewYear;
+    if (nextY > now.getFullYear() || (nextY === now.getFullYear() && nextM > now.getMonth())) return;
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
+  };
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+
+  const allZero = dayTotals.every((v) => v === 0);
+
   return (
-    <div style={{ height: 52 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 10, fill: "var(--ink-subtle)" }}
-            tickLine={false}
-            axisLine={false}
-            interval={4}
-          />
-          <Tooltip
-            formatter={(v) => [eur(Number(v ?? 0)), "Cumulatief"]}
-            contentStyle={{
-              fontSize: 12,
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              background: "var(--surface)",
-              color: "var(--ink)",
-              boxShadow: "var(--shadow)",
-            }}
-          />
-          <Line
-            type="monotone"
-            dataKey="amount"
-            stroke="var(--accent)"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: "var(--accent)" }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <Card style={{ gridColumn: "1 / span 2" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <SectionLabel>Totale donaties</SectionLabel>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <StatNum value={eur(curTotal)} size={36} />
+            {prevTotal > 0 && <Delta pct={growth} />}
+          </div>
+          {prevTotal > 0 && (
+            <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>
+              vs. vorige maand ({eur(prevTotal)})
+            </div>
+          )}
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <SectionLabel>Jaar tot nu</SectionLabel>
+          <StatNum value={eur(ytdTotal)} size={22} />
+          <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
+            Jan – {MONTHS_NL[now.getMonth()]} {now.getFullYear()}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <button
+          onClick={prev}
+          style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center" }}
+        >
+          <ChevronLeft size={14} color="var(--ink-muted)" />
+        </button>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", minWidth: 120, textAlign: "center" }}>
+          {MONTHS_FULL[viewMonth]} {viewYear}
+        </span>
+        <button
+          onClick={next}
+          disabled={isCurrentMonth}
+          style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: isCurrentMonth ? "not-allowed" : "pointer", display: "flex", alignItems: "center", opacity: isCurrentMonth ? 0.3 : 1 }}
+        >
+          <ChevronRight size={14} color="var(--ink-muted)" />
+        </button>
+      </div>
+
+      {allZero ? (
+        <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 12, color: "var(--ink-subtle)" }}>Geen data</span>
+        </div>
+      ) : (
+        <div style={{ height: 52 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 2, right: 2, bottom: 0, left: 2 }}>
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--ink-subtle)" }} tickLine={false} axisLine={false} interval={4} />
+              <Tooltip
+                formatter={(v) => [eur(Number(v ?? 0)), "Cumulatief"]}
+                contentStyle={{ fontSize: 12, border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface)", color: "var(--ink)", boxShadow: "var(--shadow)" }}
+              />
+              <Line type="monotone" dataKey="amount" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "var(--accent)" }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </Card>
   );
 }
 
-/* ─── page ────────────────────────────────────────── */
+// ── Widget 2: Maandelijkse leden ──────────────────────────────────────────────
+function MonthlyMembersWidget() {
+  const top5 = [...donors]
+    .filter((d) => d.actief)
+    .sort((a, b) => b.bedrag_maand - a.bedrag_maand)
+    .slice(0, 5);
 
+  return (
+    <Card>
+      <SectionLabel>Maandelijkse leden</SectionLabel>
+      <div style={{ display: "flex", gap: 28, marginBottom: 16 }}>
+        <div>
+          <StatNum value={String(memberCount())} />
+          <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>actieve leden</div>
+        </div>
+        <div>
+          <StatNum value={eur(monthlyRecurring())} />
+          <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>per maand terugkerend</div>
+        </div>
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+        <SectionLabel mb={8}>Top 5</SectionLabel>
+        {top5.map((d, i) => (
+          <div
+            key={d.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 0",
+              borderBottom: i < top5.length - 1 ? "1px solid var(--border)" : "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  background: "var(--accent-light)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "var(--accent-dark)",
+                  flexShrink: 0,
+                }}
+              >
+                {i + 1}
+              </div>
+              <span style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500 }}>{d.naam}</span>
+              {d.type === "ondernemer" && <Badge variant="blue">Ondernemer</Badge>}
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent-dark)" }}>
+              {eur(d.bedrag_maand)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// ── Widget 3: Ondernemers ─────────────────────────────────────────────────────
+function BusinessDonorsWidget() {
+  const bizz = donors.filter((d) => d.type === "ondernemer" && d.actief);
+  const totalBiz = bizz.reduce((s, d) => s + d.bedrag_maand, 0);
+  const top3 = bizz.slice(0, 3);
+
+  return (
+    <Card>
+      <SectionLabel>Ondernemers</SectionLabel>
+      <div style={{ display: "flex", gap: 28, marginBottom: 16 }}>
+        <div>
+          <StatNum value={String(businessCount())} />
+          <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>zakelijke donors</div>
+        </div>
+        <div>
+          <StatNum value={eur(totalBiz)} />
+          <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>per maand</div>
+        </div>
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+        {top3.map((d, i) => (
+          <div
+            key={d.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "6px 0",
+              borderBottom: i < top3.length - 1 ? "1px solid var(--border)" : "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Badge variant="blue">Ondernemer</Badge>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{d.naam}</span>
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent-dark)" }}>
+              {eur(d.bedrag_maand)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// ── Widget 4: Aankomende evenementen ──────────────────────────────────────────
+function EventsWidget() {
+  const today = new Date().toISOString().split("T")[0];
+  const upcoming = [...events]
+    .filter((e) => e.datum >= today)
+    .sort((a, b) => a.datum.localeCompare(b.datum))
+    .slice(0, 4);
+
+  const colorMap = {
+    religieus: "actief" as const,
+    fundraising: "warning" as const,
+    algemeen: "grey" as const,
+  };
+
+  return (
+    <Card>
+      <SectionLabel>Aankomende evenementen</SectionLabel>
+      {upcoming.length === 0 && (
+        <p style={{ fontSize: 13, color: "var(--ink-muted)" }}>Geen aankomende evenementen.</p>
+      )}
+      {upcoming.map((ev, i) => {
+        const monthIdx = Number(ev.datum.split("-")[1]) - 1;
+        const day = ev.datum.split("-")[2];
+        return (
+          <div
+            key={ev.id}
+            style={{
+              display: "flex",
+              gap: 14,
+              padding: "8px 0",
+              borderBottom: i < upcoming.length - 1 ? "1px solid var(--border)" : "none",
+              alignItems: "flex-start",
+            }}
+          >
+            <div style={{ width: 36, textAlign: "center", flexShrink: 0 }}>
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  color: "var(--ink-subtle)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {MONTHS_NL[monthIdx]}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  color: "var(--ink)",
+                }}
+              >
+                {day}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+                {ev.titel}
+              </div>
+              <Badge variant={colorMap[ev.type]}>{ev.type}</Badge>
+            </div>
+          </div>
+        );
+      })}
+    </Card>
+  );
+}
+
+// ── Widget 5: Toezeggingen ────────────────────────────────────────────────────
+function PromisesWidget() {
+  const open = promises.filter((p) => p.status === "open");
+  const week = open.filter((p) => p.wanneer === "week");
+  const month = open.filter((p) => p.wanneer === "maand");
+  const later = open.filter((p) => p.wanneer === "jaar");
+  const totalOpen = open.reduce((s, p) => s + p.bedrag, 0);
+
+  const rows = [
+    { label: "Deze week", items: week, color: "var(--error)", bg: "var(--error-light)" },
+    { label: "Deze maand", items: month, color: "oklch(0.60 0.14 55)", bg: "oklch(0.96 0.04 55)" },
+    { label: "Later", items: later, color: "var(--ink-subtle)", bg: "var(--bg)" },
+  ];
+
+  return (
+    <Card>
+      <SectionLabel>Toezeggingen</SectionLabel>
+      <StatNum value={eur(totalOpen)} />
+      <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2, marginBottom: 16 }}>
+        totaal openstaand
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "8px 12px",
+              borderRadius: "var(--radius-sm)",
+              background: row.bg,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: row.color,
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ fontSize: 13, color: "var(--ink)" }}>{row.label}</span>
+            </div>
+            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>
+                {row.items.length} toezeggingen
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: row.color }}>
+                {eur(row.items.reduce((s, p) => s + p.bedrag, 0))}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
-  const now = new Date();
-
-  const [chartMonth, setChartMonth] = useState(now.getMonth());
-  const [chartYear, setChartYear] = useState(now.getFullYear());
-  const [chartData, setChartData] = useState<ChartPoint[]>([]);
-  const [monthTotal, setMonthTotal] = useState(0);
-  const [prevMonthTotal, setPrevMonthTotal] = useState(0);
-  const [yearTotal, setYearTotal] = useState(0);
-  const [memberCount, setMemberCount] = useState<number | null>(null);
-  const [monthlyRecurring, setMonthlyRecurring] = useState<number | null>(null);
-  const [topDonors, setTopDonors] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, chartMonth, chartYear]);
-
-  async function load() {
-    setLoading(true);
-    const monthStart = new Date(chartYear, chartMonth, 1).toISOString().slice(0, 10);
-    const monthEnd   = new Date(chartYear, chartMonth + 1, 0).toISOString().slice(0, 10);
-    const prevM = chartMonth === 0 ? 11 : chartMonth - 1;
-    const prevY = chartMonth === 0 ? chartYear - 1 : chartYear;
-    const prevStart = new Date(prevY, prevM, 1).toISOString().slice(0, 10);
-    const prevEnd   = new Date(prevY, prevM + 1, 0).toISOString().slice(0, 10);
-    const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
-
-    const [monthDons, prevDons, yearDons, memCount, members] = await Promise.all([
-      supabase.from("donations").select("amount, donated_at").gte("donated_at", monthStart).lte("donated_at", monthEnd),
-      supabase.from("donations").select("amount").gte("donated_at", prevStart).lte("donated_at", prevEnd),
-      supabase.from("donations").select("amount").gte("donated_at", yearStart),
-      supabase.from("members").select("*", { count: "exact", head: true }),
-      supabase.from("members").select("id, name, first_name, last_name, monthly_amount, membership_type")
-        .not("monthly_amount", "is", null).order("monthly_amount", { ascending: false }).limit(5),
-    ]);
-
-    const daysInMonth = new Date(chartYear, chartMonth + 1, 0).getDate();
-    const byDay = new Array(daysInMonth).fill(0);
-    (monthDons.data ?? []).forEach((d) => {
-      byDay[new Date(d.donated_at).getDate() - 1] += Number(d.amount);
-    });
-    let cum = 0;
-    setChartData(byDay.map((amt, i) => { cum += amt; return { label: String(i + 1), amount: cum }; }));
-
-    const mTotal = (monthDons.data ?? []).reduce((s, d) => s + Number(d.amount), 0);
-    const pTotal = (prevDons.data ?? []).reduce((s, d) => s + Number(d.amount), 0);
-    const yTotal = (yearDons.data ?? []).reduce((s, d) => s + Number(d.amount), 0);
-    setMonthTotal(mTotal);
-    setPrevMonthTotal(pTotal);
-    setYearTotal(yTotal);
-    setMemberCount(memCount.count ?? 0);
-    setMonthlyRecurring((members.data ?? []).reduce((s, m) => s + Number(m.monthly_amount ?? 0), 0));
-    setTopDonors((members.data ?? []) as Member[]);
-    setLoading(false);
-  }
-
-  const prevMonth = () => {
-    if (chartMonth === 0) { setChartMonth(11); setChartYear(y => y - 1); }
-    else setChartMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    const nextM = chartMonth === 11 ? 0 : chartMonth + 1;
-    const nextY = chartMonth === 11 ? chartYear + 1 : chartYear;
-    if (nextY > now.getFullYear() || (nextY === now.getFullYear() && nextM > now.getMonth())) return;
-    if (chartMonth === 11) { setChartMonth(0); setChartYear(y => y + 1); } else setChartMonth(m => m + 1);
-  };
-  const isCurrentMonth = chartYear === now.getFullYear() && chartMonth === now.getMonth();
-  const pctChange = prevMonthTotal > 0 ? ((monthTotal - prevMonthTotal) / prevMonthTotal) * 100 : null;
-
-  if (authLoading) return null;
-
   const today = new Date().toLocaleDateString("nl-NL", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   return (
@@ -213,130 +435,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Grid — exact 2-col like design, gap 16px */}
+      {/* Grid — 2 cols, gap 16; TotalDonations spans full width */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-
-        {/* ── 1. Totale donaties (spans full width) ── */}
-        <Card style={{ gridColumn: "1 / span 2" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-            {/* Left */}
-            <div>
-              <SectionLabel>Totale donaties</SectionLabel>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <StatNum value={loading ? "…" : eur(monthTotal)} size={36} />
-                <Delta pct={pctChange} />
-              </div>
-              {prevMonthTotal > 0 && (
-                <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 4 }}>
-                  vs. vorige maand ({eur(prevMonthTotal)})
-                </div>
-              )}
-            </div>
-            {/* Right: year total */}
-            <div style={{ textAlign: "right" }}>
-              <SectionLabel>Jaar tot nu</SectionLabel>
-              <StatNum value={loading ? "…" : eur(yearTotal)} size={22} />
-              <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
-                Jan – {MONTHS_SHORT[now.getMonth()]} {now.getFullYear()}
-              </div>
-            </div>
-          </div>
-
-          {/* Month nav */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <button onClick={prevMonth} style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center" }}>
-              <ChevronLeft size={14} color="var(--ink-muted)" />
-            </button>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", minWidth: 120, textAlign: "center" }}>
-              {MONTHS_FULL[chartMonth]} {chartYear}
-            </span>
-            <button onClick={nextMonth} disabled={isCurrentMonth} style={{ background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "4px 8px", cursor: "pointer", display: "flex", alignItems: "center", opacity: isCurrentMonth ? 0.3 : 1 }}>
-              <ChevronRight size={14} color="var(--ink-muted)" />
-            </button>
-          </div>
-
-          <Sparkline data={chartData} />
-        </Card>
-
-        {/* ── 2. Maandelijkse leden ── */}
-        <Card>
-          <SectionLabel>Maandelijkse leden</SectionLabel>
-          <div style={{ display: "flex", gap: 28, marginBottom: 16 }}>
-            <div>
-              <StatNum value={loading ? "…" : String(memberCount ?? 0)} size={30} />
-              <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>actieve leden</div>
-            </div>
-            <div>
-              <StatNum value={loading ? "…" : eur(monthlyRecurring ?? 0)} size={30} />
-              <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>per maand terugkerend</div>
-            </div>
-          </div>
-
-          {topDonors.length > 0 ? (
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-              <SectionLabel>Top 5</SectionLabel>
-              {topDonors.map((m, i) => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: i < topDonors.length - 1 ? "1px solid var(--border)" : "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--accent-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--accent-dark)", flexShrink: 0 }}>
-                      {i + 1}
-                    </div>
-                    <span style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500 }}>{displayName(m)}</span>
-                    {m.membership_type && m.membership_type !== "lid" && (
-                      <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 99, background: "var(--accent-light)", color: "var(--accent-dark)", fontWeight: 600 }}>
-                        {m.membership_type}
-                      </span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent-dark)" }}>
-                    {eur(Number(m.monthly_amount ?? 0))}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-              <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>
-                Nog geen leden met maandbedrag.{" "}
-                <Link href="/members" style={{ color: "var(--accent-dark)" }}>Voeg leden toe →</Link>
-              </p>
-            </div>
-          )}
-        </Card>
-
-        {/* ── 3. Ondernemers ── */}
-        <Card>
-          <SectionLabel>Ondernemers</SectionLabel>
-          <div style={{ padding: "20px 0", textAlign: "center" }}>
-            <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
-            <Link href="/ondernemers" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
-              Bekijk ondernemers →
-            </Link>
-          </div>
-        </Card>
-
-        {/* ── 4. Aankomende evenementen ── */}
-        <Card>
-          <SectionLabel>Aankomende evenementen</SectionLabel>
-          <div style={{ padding: "20px 0", textAlign: "center" }}>
-            <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
-            <Link href="/evenementen" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
-              Bekijk evenementen →
-            </Link>
-          </div>
-        </Card>
-
-        {/* ── 5. Toezeggingen ── */}
-        <Card>
-          <SectionLabel>Toezeggingen</SectionLabel>
-          <div style={{ padding: "20px 0", textAlign: "center" }}>
-            <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
-            <Link href="/toezeggingen" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
-              Bekijk toezeggingen →
-            </Link>
-          </div>
-        </Card>
-
+        <TotalDonationsWidget />
+        <MonthlyMembersWidget />
+        <BusinessDonorsWidget />
+        <EventsWidget />
+        <PromisesWidget />
       </div>
     </AppShell>
   );
