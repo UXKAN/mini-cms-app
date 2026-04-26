@@ -8,7 +8,7 @@ import { useOrg } from "../lib/orgContext";
 import type { Member, MemberStatus } from "../lib/types";
 import { Button } from "@/components/ui/button";
 import AppShell from "../components/AppShell";
-import { PageLayout, EmptyState, Badge, Card, FormLabel, RowActions } from "@/components/crm";
+import { PageLayout, EmptyState, Badge, Card, FormLabel, RowActions, Select } from "@/components/crm";
 import {
   Table,
   TableBody,
@@ -247,9 +247,9 @@ function MembersInner() {
         open={modalMode === "add" || modalMode === "edit"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-serif font-normal text-xl">
+            <DialogTitle>
               {modalMode === "edit" ? "Lid bewerken" : "Nieuw lid"}
             </DialogTitle>
           </DialogHeader>
@@ -266,9 +266,9 @@ function MembersInner() {
         open={modalMode === "import"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent className="max-w-[960px] max-h-[90vh] overflow-y-auto">
+        <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-serif font-normal text-xl">
+            <DialogTitle>
               Leden importeren
             </DialogTitle>
           </DialogHeader>
@@ -370,7 +370,7 @@ function MemberForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <Input
           placeholder="Voornaam *"
           value={firstName}
@@ -443,17 +443,16 @@ function MemberForm({
         />
         <div className="flex flex-col gap-1.5">
           <FormLabel>Status</FormLabel>
-          <select
+          <Select
             value={status}
             onChange={(e) => setStatus(e.target.value as MemberStatus)}
-            className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <Input
           placeholder="Notities"
@@ -476,7 +475,7 @@ function MemberForm({
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuleren
         </Button>
-        <Button type="submit" disabled={saving} className="crm-button-modal-primary">
+        <Button type="submit" disabled={saving} variant="modalPrimary">
           {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
         </Button>
       </div>
