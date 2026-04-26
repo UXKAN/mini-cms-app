@@ -155,11 +155,5 @@ select:focus {
   box-shadow: 0 0 0 3px oklch(0.52 0.13 165 / 0.1) !important;
 }
 
-/* ─── Modal primary button shadow (Fase 1.6) ──────── */
-.crm-button-modal-primary {
-  box-shadow: 0 4px 16px oklch(0.52 0.13 165 / 0.3);
-}
-
-.crm-button-modal-primary:hover {
-  box-shadow: 0 6px 20px oklch(0.52 0.13 165 / 0.4);
-}
+/* Modal primary button shadow now lives in the Button `modalPrimary` variant
+   in src/components/ui/button.tsx — see plans/sequential-knitting-starlight.md */
