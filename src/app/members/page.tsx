@@ -248,7 +248,7 @@ function MembersInner() {
         open={modalMode === "add" || modalMode === "edit"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>
               {modalMode === "edit" ? "Lid bewerken" : "Nieuw lid"}
@@ -267,7 +267,7 @@ function MembersInner() {
         open={modalMode === "import"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
+        <DialogContent size="xl">
           <DialogHeader>
             <DialogTitle>
               Leden importeren
