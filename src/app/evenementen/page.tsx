@@ -159,7 +159,7 @@ function EvenementenInner() {
                   borderRadius: "var(--radius-sm)",
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
-                  background: "var(--surface)",
+                  background: "var(--background)",
                   color: "var(--ink)",
                   outline: "none",
                   resize: "vertical",

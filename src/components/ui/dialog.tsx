@@ -58,7 +58,9 @@ const DialogContent = React.forwardRef<
         // max-h + overflow-y-auto keeps the modal inside the viewport when
         // forms are long. Without this, tall content gets clipped above and
         // below because the modal is centered with translateY(-50%).
-        "fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-h-[calc(100vh-4rem)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-6 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        // bg-surface (whiter than --background) makes the modal lift visually
+        // off the page bg, AND lets warm-bg inputs naturally stand out.
+        "fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-h-[calc(100vh-4rem)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-6 border bg-surface p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
         DIALOG_SIZE_CLASSES[size],
         className
       )}

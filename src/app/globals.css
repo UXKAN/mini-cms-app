@@ -23,6 +23,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset: var(--background);
+  /* Surface = whiter than --background. Used for elevated containers like
+     modals/cards so inputs (still bg-background, warm) visually recede. */
+  --color-surface: var(--surface);
 }
 
 :root {

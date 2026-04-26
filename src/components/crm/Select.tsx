@@ -23,7 +23,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           borderRadius: "var(--radius-sm)",
           fontFamily: "var(--font-sans)",
           fontSize: 14,
-          background: "var(--surface)",
+          // Use --background (warm) so the select stands out from --surface
+          // modals/cards. Same approach as shadcn Input.
+          background: "var(--background)",
           color: "var(--ink)",
           outline: "none",
           ...style,
