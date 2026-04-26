@@ -9,6 +9,7 @@ import {
   DataTable,
   FormLabel,
   SectionLabel,
+  Select,
   type DataTableColumn,
 } from "@/components/crm";
 import { Button } from "@/components/ui/button";
@@ -38,21 +39,6 @@ const EMPTY_FORM: NewPromise = {
   type: "cash",
   wanneer: "week",
   datum: "",
-};
-
-// ── Select styling ───────────────────────────────────────────────────────────
-
-const selectStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "9px 12px",
-  border: "1.5px solid var(--border)",
-  borderRadius: "var(--radius-sm)",
-  fontFamily: "var(--font-sans)",
-  fontSize: 14,
-  background: "var(--surface)",
-  color: "var(--ink)",
-  outline: "none",
-  cursor: "pointer",
 };
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
@@ -225,9 +211,9 @@ function ToezeggingenInner() {
       >
         {/* Openstaand */}
         <Card
+          padding="compact"
           style={{
             borderLeft: "3px solid var(--warn)",
-            padding: "16px 20px",
           }}
         >
           <SectionLabel mb={4}>Openstaand</SectionLabel>
@@ -246,9 +232,9 @@ function ToezeggingenInner() {
 
         {/* Deze week */}
         <Card
+          padding="compact"
           style={{
             borderLeft: "3px solid var(--accent)",
-            padding: "16px 20px",
           }}
         >
           <SectionLabel mb={4}>Deze week</SectionLabel>
@@ -267,9 +253,9 @@ function ToezeggingenInner() {
 
         {/* Deze maand */}
         <Card
+          padding="compact"
           style={{
             borderLeft: "3px solid oklch(0.35 0.1 240)",
-            padding: "16px 20px",
           }}
         >
           <SectionLabel mb={4}>Deze maand</SectionLabel>
@@ -302,20 +288,14 @@ function ToezeggingenInner() {
         open={addOpen}
         onOpenChange={(open) => !open && handleCancel()}
       >
-        <DialogContent style={{ maxWidth: 480 }}>
+        <DialogContent size="md">
           <DialogHeader>
-            <DialogTitle
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: 20,
-                fontWeight: 400,
-              }}
-            >
+            <DialogTitle>
               Toezegging toevoegen
             </DialogTitle>
           </DialogHeader>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 4 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 4 }}>
             {/* Naam */}
             <div>
               <FormLabel required htmlFor="tz-naam">
@@ -351,7 +331,7 @@ function ToezeggingenInner() {
             {/* Type */}
             <div>
               <FormLabel htmlFor="tz-type">Type</FormLabel>
-              <select
+              <Select
                 id="tz-type"
                 value={form.type}
                 onChange={(e) =>
@@ -360,18 +340,17 @@ function ToezeggingenInner() {
                     type: e.target.value as NewPromise["type"],
                   }))
                 }
-                style={selectStyle}
               >
                 <option value="cash">Cash</option>
                 <option value="online">Online</option>
                 <option value="goud">Goud</option>
-              </select>
+              </Select>
             </div>
 
             {/* Wanneer */}
             <div>
               <FormLabel htmlFor="tz-wanneer">Wanneer</FormLabel>
-              <select
+              <Select
                 id="tz-wanneer"
                 value={form.wanneer}
                 onChange={(e) =>
@@ -380,12 +359,11 @@ function ToezeggingenInner() {
                     wanneer: e.target.value as NewPromise["wanneer"],
                   }))
                 }
-                style={selectStyle}
               >
                 <option value="week">Deze week</option>
                 <option value="maand">Deze maand</option>
                 <option value="jaar">Dit jaar</option>
-              </select>
+              </Select>
             </div>
 
             {/* Verwachte datum */}
@@ -401,7 +379,7 @@ function ToezeggingenInner() {
             </div>
 
             {/* Buttons */}
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Annuleren
               </Button>
@@ -409,7 +387,7 @@ function ToezeggingenInner() {
                 type="button"
                 onClick={handleSave}
                 disabled={!form.naam || !form.bedrag}
-                className="crm-button-modal-primary"
+                variant="modalPrimary"
               >
                 Toezegging toevoegen
               </Button>
