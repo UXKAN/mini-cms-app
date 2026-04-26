@@ -22,7 +22,12 @@
 
 # misc
 .DS_Store
+**/.DS_Store
 *.pem
+
+# claude / superpowers cache
+/.claude/worktrees/
+/.superpowers/
 
 # debug
 npm-debug.log*
