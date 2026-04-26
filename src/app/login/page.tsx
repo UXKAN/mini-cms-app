@@ -1,19 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Shield, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "../lib/supabase";
 
+// ⚠️ TEMP DEMO MODE — keep in sync with useAuth.ts and org.ts.
+const DEMO_MODE = true;
+
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Skip the login screen entirely in demo mode.
+  useEffect(() => {
+    if (DEMO_MODE) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   useEffect(() => {
     setMounted(true);
