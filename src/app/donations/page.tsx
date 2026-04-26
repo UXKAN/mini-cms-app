@@ -7,7 +7,7 @@ import { useOrg } from "../lib/orgContext";
 import type { DonationMethod, DonationWithMember, Member } from "../lib/types";
 import { Button } from "@/components/ui/button";
 import AppShell from "../components/AppShell";
-import { PageLayout, StatCard, EmptyState, FormLabel, RowActions } from "@/components/crm";
+import { PageLayout, StatCard, EmptyState, FormLabel, RowActions, Select } from "@/components/crm";
 import {
   Table,
   TableBody,
@@ -174,9 +174,9 @@ function DonationsInner() {
         open={modalMode !== "closed"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent className="max-w-[520px]">
+        <DialogContent size="md">
           <DialogHeader>
-            <DialogTitle className="font-serif font-normal text-xl">
+            <DialogTitle>
               {modalMode === "edit" ? "Donatie bewerken" : "Nieuwe donatie"}
             </DialogTitle>
           </DialogHeader>
@@ -249,12 +249,9 @@ function DonationForm({
     else { setSaving(false); await onSaved(); }
   };
 
-  const selectCls =
-    "h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring w-full";
-
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
           <FormLabel required>Bedrag (EUR)</FormLabel>
           <Input
@@ -280,28 +277,26 @@ function DonationForm({
         </div>
         <div className="flex flex-col gap-1.5">
           <FormLabel>Methode</FormLabel>
-          <select
+          <Select
             value={method}
             onChange={(e) => setMethod(e.target.value as DonationMethod)}
-            className={selectCls}
           >
             {(Object.keys(METHOD_LABELS) as DonationMethod[]).map((m) => (
               <option key={m} value={m}>{METHOD_LABELS[m]}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1.5">
           <FormLabel>Lid (optioneel)</FormLabel>
-          <select
+          <Select
             value={memberId}
             onChange={(e) => setMemberId(e.target.value)}
-            className={selectCls}
           >
             <option value="">— anoniem —</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>{memberLabel(m)}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1.5 col-span-2">
           <FormLabel>Notities</FormLabel>
@@ -327,7 +322,7 @@ function DonationForm({
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
           Annuleren
         </Button>
-        <Button type="submit" disabled={saving} className="crm-button-modal-primary">
+        <Button type="submit" disabled={saving} variant="modalPrimary">
           {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
         </Button>
       </div>
