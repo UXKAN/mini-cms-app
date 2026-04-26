@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -295,9 +296,9 @@ function ToezeggingenInner() {
             </DialogTitle>
           </DialogHeader>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 4 }}>
-            {/* Naam */}
-            <div>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Naam — full width */}
+            <div className="col-span-2">
               <FormLabel required htmlFor="tz-naam">
                 Naam
               </FormLabel>
@@ -324,6 +325,18 @@ function ToezeggingenInner() {
                 value={form.bedrag}
                 onChange={(e) => setForm((f) => ({ ...f, bedrag: e.target.value }))}
                 placeholder="bv. 500"
+                className="h-10 text-sm"
+              />
+            </div>
+
+            {/* Verwachte datum */}
+            <div>
+              <FormLabel htmlFor="tz-datum">Verwachte datum</FormLabel>
+              <Input
+                id="tz-datum"
+                type="date"
+                value={form.datum}
+                onChange={(e) => setForm((f) => ({ ...f, datum: e.target.value }))}
                 className="h-10 text-sm"
               />
             </div>
@@ -365,34 +378,21 @@ function ToezeggingenInner() {
                 <option value="jaar">Dit jaar</option>
               </Select>
             </div>
-
-            {/* Verwachte datum */}
-            <div>
-              <FormLabel htmlFor="tz-datum">Verwachte datum</FormLabel>
-              <Input
-                id="tz-datum"
-                type="date"
-                value={form.datum}
-                onChange={(e) => setForm((f) => ({ ...f, datum: e.target.value }))}
-                className="h-10 text-sm"
-              />
-            </div>
-
-            {/* Buttons */}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
-              <Button type="button" variant="outline" onClick={handleCancel}>
-                Annuleren
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSave}
-                disabled={!form.naam || !form.bedrag}
-                variant="modalPrimary"
-              >
-                Toezegging toevoegen
-              </Button>
-            </div>
           </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              Annuleren
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={!form.naam || !form.bedrag}
+              variant="modalPrimary"
+            >
+              Toezegging toevoegen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageLayout>
