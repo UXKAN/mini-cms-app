@@ -72,12 +72,19 @@
   /* Note: --border, --radius, --accent already defined above */
 }
 
+/* Tailwind v4 places utilities inside @layer utilities. CSS Cascade Layers
+   spec gives UNLAYERED styles HIGHER precedence than layered ones, so a
+   blanket `* { padding: 0; margin: 0 }` here would override every Tailwind
+   padding/margin utility (px-4, p-6, etc.) — buttons and modal content
+   ended up flush against the edges.
+
+   Tailwind preflight already handles box-sizing and the necessary
+   margin/padding resets on body/headings/lists, so we only keep:
+   - border-color   → required for v4 (default border color is no longer set)
+   - tap-highlight  → suppresses the iOS tap flash */
 *, ::before, ::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
   border-color: var(--border);
+  -webkit-tap-highlight-color: transparent;
 }
 
 html,
