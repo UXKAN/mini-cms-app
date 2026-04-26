@@ -47,8 +47,9 @@ export default function LoginPage() {
       {/* Centered form */}
       <main className="flex-1 flex items-center justify-center p-6">
         <div
-          className="w-full max-w-sm"
+          className="w-full"
           style={{
+            maxWidth: 400,
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(-10px)",
             transition: "opacity 0.3s ease, transform 0.3s ease",
