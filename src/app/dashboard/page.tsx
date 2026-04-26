@@ -13,6 +13,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
+import { Card, SectionLabel } from "@/components/crm";
 import type { Member } from "../lib/types";
 
 /* ─── helpers ─────────────────────────────────────── */
@@ -35,39 +36,7 @@ const MONTHS_FULL = [
 ];
 const MONTHS_SHORT = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
 
-/* ─── shared card wrapper ─────────────────────────── */
-
-function Card({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <div style={{
-      background: "var(--surface)",
-      border: "1px solid var(--border)",
-      borderRadius: "var(--radius)",
-      boxShadow: "var(--shadow)",
-      padding: "22px 24px",
-      ...style,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-/* ─── shared label style ──────────────────────────── */
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  color: "var(--ink-subtle)",
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-  marginBottom: 8,
-};
+/* ─── stat number ─────────────────────────────────── */
 
 /* ─── stat number ─────────────────────────────────── */
 
@@ -254,7 +223,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
             {/* Left */}
             <div>
-              <div style={labelStyle}>Totale donaties</div>
+              <SectionLabel>Totale donaties</SectionLabel>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <StatNum value={loading ? "…" : eur(monthTotal)} size={36} />
                 <Delta pct={pctChange} />
@@ -267,7 +236,7 @@ export default function DashboardPage() {
             </div>
             {/* Right: year total */}
             <div style={{ textAlign: "right" }}>
-              <div style={labelStyle}>Jaar tot nu</div>
+              <SectionLabel>Jaar tot nu</SectionLabel>
               <StatNum value={loading ? "…" : eur(yearTotal)} size={22} />
               <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>
                 Jan – {MONTHS_SHORT[now.getMonth()]} {now.getFullYear()}
@@ -293,7 +262,7 @@ export default function DashboardPage() {
 
         {/* ── 2. Maandelijkse leden ── */}
         <Card>
-          <div style={labelStyle}>Maandelijkse leden</div>
+          <SectionLabel>Maandelijkse leden</SectionLabel>
           <div style={{ display: "flex", gap: 28, marginBottom: 16 }}>
             <div>
               <StatNum value={loading ? "…" : String(memberCount ?? 0)} size={30} />
@@ -307,7 +276,7 @@ export default function DashboardPage() {
 
           {topDonors.length > 0 ? (
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-              <div style={{ ...labelStyle, marginBottom: 8 }}>Top 5</div>
+              <SectionLabel>Top 5</SectionLabel>
               {topDonors.map((m, i) => (
                 <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: i < topDonors.length - 1 ? "1px solid var(--border)" : "none" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -339,7 +308,7 @@ export default function DashboardPage() {
 
         {/* ── 3. Ondernemers ── */}
         <Card>
-          <div style={labelStyle}>Ondernemers</div>
+          <SectionLabel>Ondernemers</SectionLabel>
           <div style={{ padding: "20px 0", textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
             <Link href="/ondernemers" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
@@ -350,7 +319,7 @@ export default function DashboardPage() {
 
         {/* ── 4. Aankomende evenementen ── */}
         <Card>
-          <div style={labelStyle}>Aankomende evenementen</div>
+          <SectionLabel>Aankomende evenementen</SectionLabel>
           <div style={{ padding: "20px 0", textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
             <Link href="/evenementen" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
@@ -361,7 +330,7 @@ export default function DashboardPage() {
 
         {/* ── 5. Toezeggingen ── */}
         <Card>
-          <div style={labelStyle}>Toezeggingen</div>
+          <SectionLabel>Toezeggingen</SectionLabel>
           <div style={{ padding: "20px 0", textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "var(--ink-subtle)" }}>Module komt binnenkort.</p>
             <Link href="/toezeggingen" style={{ fontSize: 13, color: "var(--accent-dark)", marginTop: 8, display: "inline-block" }}>
