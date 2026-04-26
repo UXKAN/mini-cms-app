@@ -216,6 +216,7 @@ function MembersInner() {
   );
 }
 
+// AppShell provides the sidebar + OrgContext. PageLayout is inside MembersInner.
 export default function MembersPage() {
   return (
     <AppShell>

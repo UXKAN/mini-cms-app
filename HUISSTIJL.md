@@ -11,12 +11,26 @@ import { Card, PageHeader, StatCard, SectionLabel, Badge, EmptyState, PageLayout
 ## Componenten
 
 ### PageLayout
-Gebruik voor elke pagina. Bevat AppShell + PageHeader + optionele actieknop rechts.
+Gebruik voor elke pagina. Bevat PageHeader + optionele actieknop rechts. Wikkel je pagina altijd ook in `<AppShell>` voor de sidebar en navigatiecontext.
 
 ```tsx
-<PageLayout title="Leden" subtitle="Beheer je leden." action={<Button>Toevoegen</Button>}>
-  {/* inhoud */}
-</PageLayout>
+// In de default export van de pagina:
+export default function MijnPage() {
+  return (
+    <AppShell>
+      <MijnPageInner />
+    </AppShell>
+  );
+}
+
+// In de inner component:
+function MijnPageInner() {
+  return (
+    <PageLayout title="Leden" subtitle="Beheer je leden." action={<Button>Toevoegen</Button>}>
+      {/* inhoud */}
+    </PageLayout>
+  );
+}
 ```
 
 ### Card

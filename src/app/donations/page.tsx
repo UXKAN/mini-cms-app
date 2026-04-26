@@ -100,7 +100,7 @@ function DonationsInner() {
     >
       {/* stat cards */}
       {donations.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 20 }}>
           <StatCard label="Totaal dit jaar" value={formatEuro(yearTotal)} />
           <StatCard label="Totaal (alles)"  value={formatEuro(total)} />
           <StatCard label="Aantal donaties" value={String(donations.length)} />
@@ -202,6 +202,7 @@ function DonationsInner() {
   );
 }
 
+// AppShell provides the sidebar + OrgContext. PageLayout is inside DonationsInner.
 export default function DonationsPage() {
   return (
     <AppShell>
