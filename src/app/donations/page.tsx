@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
-import AppShell from "../components/AppShell";
 import { useOrg } from "../lib/orgContext";
 import type { DonationMethod, DonationWithMember, Member } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageLayout, StatCard, EmptyState } from "@/components/crm";
 import {
   Table,
   TableBody,
@@ -93,23 +92,16 @@ function DonationsInner() {
     .reduce((sum, d) => sum + Number(d.amount), 0);
 
   return (
-    <>
-      <div className="flex justify-between items-end mb-7 gap-4 flex-wrap">
-        <div>
-          <h1 className="font-serif text-4xl font-normal text-foreground">Donaties</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Registreer donaties en koppel ze optioneel aan een lid.
-          </p>
-        </div>
-        {donations.length > 0 && (
-          <Button onClick={openAdd}>Donatie toevoegen</Button>
-        )}
-      </div>
-
+    <PageLayout
+      title="Donaties"
+      subtitle="Registreer donaties en koppel ze optioneel aan een lid."
+      action={donations.length > 0 ? <Button onClick={openAdd}>Donatie toevoegen</Button> : undefined}
+    >
+      {/* stat cards */}
       {donations.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
           <StatCard label="Totaal dit jaar" value={formatEuro(yearTotal)} />
-          <StatCard label="Totaal (alles)" value={formatEuro(total)} />
+          <StatCard label="Totaal (alles)"  value={formatEuro(total)} />
           <StatCard label="Aantal donaties" value={String(donations.length)} />
         </div>
       )}
@@ -126,18 +118,11 @@ function DonationsInner() {
       {loading ? (
         <p className="text-muted-foreground">Donaties laden...</p>
       ) : donations.length === 0 ? (
-        <div
-          className="rounded-[10px] border border-border p-14 text-center"
-          style={{ background: "var(--surface)" }}
-        >
-          <h2 className="font-serif text-2xl font-normal text-foreground mb-2">
-            Nog geen donaties
-          </h2>
-          <p className="text-muted-foreground text-sm mb-6">
-            Registreer je eerste donatie en koppel deze optioneel aan een lid.
-          </p>
-          <Button onClick={openAdd}>Donatie toevoegen</Button>
-        </div>
+        <EmptyState
+          title="Nog geen donaties"
+          description="Registreer je eerste donatie en koppel deze optioneel aan een lid."
+          action={<Button onClick={openAdd}>Donatie toevoegen</Button>}
+        />
       ) : (
         <div
           className="rounded-[10px] border border-border overflow-hidden"
@@ -212,16 +197,12 @@ function DonationsInner() {
           />
         </DialogContent>
       </Dialog>
-    </>
+    </PageLayout>
   );
 }
 
 export default function DonationsPage() {
-  return (
-    <AppShell>
-      <DonationsInner />
-    </AppShell>
-  );
+  return <DonationsInner />;
 }
 
 function DonationForm({
@@ -355,21 +336,6 @@ function DonationForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">
-          {label}
-        </div>
-        <div className="font-serif text-[32px] font-normal text-foreground mt-1 leading-none">
-          {value}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
