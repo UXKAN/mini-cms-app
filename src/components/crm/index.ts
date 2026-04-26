@@ -8,5 +8,6 @@ export { PageLayout } from "./PageLayout";
 export { FormLabel } from "./FormLabel";
 export { RowActions } from "./RowActions";
 export { SearchInput } from "./SearchInput";
+export { Select } from "./Select";
 export { DataTable } from "./DataTable";
 export type { DataTableColumn } from "./DataTable";

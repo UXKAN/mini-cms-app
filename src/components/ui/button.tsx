@@ -18,6 +18,10 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Modal primary submit — same color as default + accent shadow.
+        // Use this for the primary submit button inside any Dialog/Modal.
+        modalPrimary:
+          "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_16px_oklch(0.52_0.13_165_/_0.3)] hover:shadow-[0_6px_20px_oklch(0.52_0.13_165_/_0.4)]",
       },
       size: {
         default: "h-10 px-4 py-2",
