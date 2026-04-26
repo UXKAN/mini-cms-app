@@ -29,6 +29,8 @@ import {
   importPageStyles as S,
   type StepKey,
 } from "./ImportStepper";
+import { Card, Select, AlertBanner } from "@/components/crm";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 type ParsedFile = {
   fileName: string;
@@ -328,7 +330,7 @@ export default function MemberImporter({ onDone, showReportLink = true }: Props)
       />
 
       {committedImportId && (
-        <div style={{ ...S.alert, background: "var(--success-light)", color: "var(--success)" }}>
+        <AlertBanner tone="success">
           Import voltooid.{" "}
           {showReportLink && (
             <Link
@@ -338,7 +340,7 @@ export default function MemberImporter({ onDone, showReportLink = true }: Props)
               Bekijk rapport
             </Link>
           )}
-        </div>
+        </AlertBanner>
       )}
 
       {step === "upload" && (
@@ -387,9 +389,9 @@ function UploadStep({
 }) {
   return (
     <>
-      <div style={S.card}>
+      <Card>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <label style={{ ...S.primaryBtn, cursor: "pointer", display: "inline-block" }}>
+          <label className={buttonVariants({ variant: "default" })} style={{ cursor: "pointer" }}>
             CSV- of Excel-bestand kiezen
             <input
               type="file"
@@ -398,20 +400,20 @@ function UploadStep({
               style={{ display: "none" }}
             />
           </label>
-          <button onClick={onTemplate} style={S.ghostBtn}>
+          <Button variant="outline" onClick={onTemplate}>
             Template downloaden
-          </button>
+          </Button>
         </div>
         <p style={{ marginTop: 14, fontSize: 13, color: "var(--ink-muted)" }}>
           Ondersteunde kolommen: voornaam, achternaam, e-mail, telefoon, adres, postcode, woonplaats, IBAN, lidmaatschapstype, maandbedrag, startdatum, status, notities.
           Een &quot;naam&quot;-kolom (volledige naam) werkt ook.
         </p>
-      </div>
+      </Card>
 
       {error && (
-        <div style={{ ...S.alert, background: "var(--error-light)", color: "var(--error)" }}>
+        <AlertBanner tone="error">
           {error}
-        </div>
+        </AlertBanner>
       )}
     </>
   );
@@ -449,7 +451,7 @@ function MapStep({
 
   return (
     <>
-      <div style={S.card}>
+      <Card>
         <div style={{ fontSize: 13, color: "var(--ink-muted)", marginBottom: 14 }}>
           Bestand: <strong>{parsed.fileName}</strong> · {parsed.rows.length} rijen
         </div>
@@ -472,10 +474,9 @@ function MapStep({
                     {sample == null || sample === "" ? "—" : String(sample)}
                   </td>
                   <td style={S.td}>
-                    <select
+                    <Select
                       value={target}
                       onChange={(e) => setColumn(h, e.target.value as MappingTarget)}
-                      style={S.select}
                     >
                       <option value="ignore">— negeren —</option>
                       {MEMBER_FIELD_DEFS.map((f) => (
@@ -483,28 +484,28 @@ function MapStep({
                           {f.label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {error && (
-        <div style={{ ...S.alert, background: "var(--error-light)", color: "var(--error)" }}>
+        <AlertBanner tone="error">
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onContinue} disabled={loading} style={S.primaryBtn}>
+        <Button onClick={onContinue} disabled={loading}>
           {loading ? "Controleren..." : "Doorgaan naar voorbeeld"}
-        </button>
-        <button onClick={onBack} style={S.ghostBtn} disabled={loading}>
+        </Button>
+        <Button variant="outline" onClick={onBack} disabled={loading}>
           Ander bestand
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -536,7 +537,7 @@ function PreviewStep({
         <CountBadge label={`${counts.error} fout`} color="var(--error)" bg="var(--error-light)" />
       </div>
 
-      <div style={{ ...S.card, padding: 0, overflow: "hidden" }}>
+      <Card padding="none" style={{ overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -569,31 +570,26 @@ function PreviewStep({
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {error && (
-        <div style={{ ...S.alert, background: "var(--error-light)", color: "var(--error)", marginTop: 12 }}>
+        <AlertBanner tone="error" style={{ marginTop: 12 }}>
           {error}
-        </div>
+        </AlertBanner>
       )}
 
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-        <button
+        <Button
           onClick={onCommit}
           disabled={importing || !canCommit}
-          style={{
-            ...S.primaryBtn,
-            opacity: !canCommit ? 0.5 : 1,
-            cursor: !canCommit ? "not-allowed" : "pointer",
-          }}
         >
           {importing
             ? "Importeren..."
             : `Importeer ${counts.insert} nieuw, werk ${counts.update} bij`}
-        </button>
-        <button onClick={onBack} style={S.ghostBtn} disabled={importing}>
+        </Button>
+        <Button variant="outline" onClick={onBack} disabled={importing}>
           Terug naar koppeling
-        </button>
+        </Button>
       </div>
     </>
   );
