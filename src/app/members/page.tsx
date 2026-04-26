@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
-import AppShell from "../components/AppShell";
 import MemberImporter from "../components/MemberImporter";
 import { useOrg } from "../lib/orgContext";
 import type { Member, MemberStatus } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { PageLayout, EmptyState, Badge } from "@/components/crm";
 import {
   Table,
   TableBody,
@@ -38,20 +37,6 @@ type ModalMode = "closed" | "add" | "edit" | "import";
 function displayName(m: Member): string {
   const combined = [m.first_name, m.last_name].filter(Boolean).join(" ").trim();
   return combined || m.name || "—";
-}
-
-function StatusBadge({ status }: { status: MemberStatus }) {
-  if (status === "active") return <Badge>Actief</Badge>;
-  if (status === "inactive") return <Badge variant="secondary">Inactief</Badge>;
-  if (status === "cancelled") return <Badge variant="destructive">Opgezegd</Badge>;
-  return (
-    <Badge
-      variant="outline"
-      style={{ borderColor: "var(--warn)", color: "var(--warn)" }}
-    >
-      Prospect
-    </Badge>
-  );
 }
 
 function MembersInner() {
@@ -93,24 +78,19 @@ function MembersInner() {
   };
 
   return (
-    <>
-      <div className="flex justify-between items-end mb-7 gap-4 flex-wrap">
-        <div>
-          <h1 className="font-serif text-4xl font-normal text-foreground">Leden</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Beheer je leden en contactpersonen.
-          </p>
-        </div>
-        {members.length > 0 && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={openImport}>
-              Leden importeren
-            </Button>
+    <PageLayout
+      title="Leden"
+      subtitle="Beheer je leden en contactpersonen."
+      action={
+        members.length > 0 ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button variant="outline" onClick={openImport}>Leden importeren</Button>
             <Button onClick={openAdd}>Lid toevoegen</Button>
           </div>
-        )}
-      </div>
-
+        ) : undefined
+      }
+    >
+      {/* error banner */}
       {error && (
         <div
           className="p-3 rounded-[7px] mb-4 text-sm"
@@ -120,26 +100,20 @@ function MembersInner() {
         </div>
       )}
 
+      {/* loading */}
       {loading ? (
         <p className="text-muted-foreground">Leden laden...</p>
       ) : members.length === 0 ? (
-        <div
-          className="rounded-[10px] border border-border p-14 text-center"
-          style={{ background: "var(--surface)" }}
-        >
-          <h2 className="font-serif text-2xl font-normal text-foreground mb-2">
-            Nog geen leden
-          </h2>
-          <p className="text-muted-foreground text-sm mb-6">
-            Voeg er één toe of importeer uit Excel of CSV.
-          </p>
-          <div className="flex justify-center gap-2">
-            <Button onClick={openAdd}>Lid toevoegen</Button>
-            <Button variant="outline" onClick={openImport}>
-              Leden importeren
-            </Button>
-          </div>
-        </div>
+        <EmptyState
+          title="Nog geen leden"
+          description="Voeg er één toe of importeer uit Excel of CSV."
+          action={
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <Button onClick={openAdd}>Lid toevoegen</Button>
+              <Button variant="outline" onClick={openImport}>Leden importeren</Button>
+            </div>
+          }
+        />
       ) : (
         <div
           className="rounded-[10px] border border-border overflow-hidden"
@@ -172,7 +146,10 @@ function MembersInner() {
                       : "—"}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={m.status} />
+                    {m.status === "active"    && <Badge variant="actief">Actief</Badge>}
+                    {m.status === "inactive"  && <Badge variant="inactief">Inactief</Badge>}
+                    {m.status === "prospect"  && <Badge variant="prospect">Prospect</Badge>}
+                    {m.status === "cancelled" && <Badge variant="opgezegd">Opgezegd</Badge>}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <Button
@@ -234,16 +211,12 @@ function MembersInner() {
           />
         </DialogContent>
       </Dialog>
-    </>
+    </PageLayout>
   );
 }
 
 export default function MembersPage() {
-  return (
-    <AppShell>
-      <MembersInner />
-    </AppShell>
-  );
+  return <MembersInner />;
 }
 
 function MemberForm({
