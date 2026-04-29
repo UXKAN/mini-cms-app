@@ -1,0 +1,76 @@
+# MVP-scope
+
+**Doel van dit document:** in één oogopslag zien wat WEL en wat NIET in de eerste echte release zit. Als iets hier niet in staat, bouwen we het niet vóór de SaaS-sprong. Discussie? → herzie eerst dit document.
+
+**Definitie van "MVP klaar":**
+> De Nieuwe Moskee gebruikt alle onderstaande pijlers minimaal 1 maand zonder workarounds (geen Excel naast, geen briefjes naast, geen WhatsApp-lijstjes naast).
+
+---
+
+## ✅ WEL in MVP
+
+### Kern (deels al af)
+- **Members CRUD** — leden aanmaken, bekijken, aanpassen, verwijderen
+- **Donations CRUD** — donaties registreren met bedrag, datum, donateur, doel
+- **Dashboard met echte cijfers** — leden-aantal, donaties van deze maand/jaar, openstaande toezeggingen, recente activiteit. Vervangt de huidige placeholder-cards.
+
+### Drie nieuwe pijlers (vervangen huidige placeholder-pagina's)
+- **Toezeggingen CRUD** — bedrag, donateur, doel, deadline, status (open / betaald / vervallen). Knop "stuur reminder" op detail-page (handmatig).
+- **Ondernemers / sponsors CRUD** — bedrijfsnaam, contactpersoon, sponsorbedrag-historie per jaar, status (actief / inactief).
+- **Evenementen CRUD + interne registraties** — evenement aanmaken, leden eraan koppelen ("wie komt?"), basis-overzicht.
+
+### Financiële I/O
+- **Excel-import** voor leden, donaties, toezeggingen (uitbouwen van bestaande imports-flow)
+- **Excel-export** voor leden, donaties, toezeggingen
+- **ANBI-jaaroverzicht** — exporteer alle donaties van een jaar in ANBI-conform formaat
+- **ANBI-donatieformulier (digitaal)** — **publieke standalone route `/gift`**, eenmalig + periodiek, met handtekening en juridische akkoord-checkbox. Eerste versie: opslag in `gift_agreements` + bevestigingsmail aan gever (Resend). **Mail naar penningmeester en PDF-generatie volgen later** (NEXT). Dashboard-integratie pas na MVP-pijlers.
+- **Cashgeld-formulier / kwitantie** — vrijwilliger vult op telefoon in: bedrag, donateur (optioneel), doel, eventueel foto van papieren kwitantie. Hergebruikt `SignaturePad` uit gift-flow. Record in donations-tabel. *Unieke pijler: geen concurrent heeft dit.*
+
+### Operationeel
+- **Member detail page** — bewerken, donatie-historie van die persoon
+- **Password reset** (open punt uit Phase 1B)
+- **Basis-rapportages** — donaties per maand, toezeggingen-status, ledengroei
+- **Transactionele e-mail** — gift-bevestiging aan gever (eerste implementatie via Resend), password-reset, donatiebevestiging, toezegging-reminder
+
+### Architectureel onzichtbaar (geen UI, wel in DB)
+- **`organization_id` op elke nieuwe tabel** — multi-tenant-ready *(voorbereid voor meerdere moskeeën in één app, nog niet geactiveerd)*
+- **`role` veld op `organization_members`** — admin / bestuur / commissielid. Code respecteert het, maar UI is voor MVP nog niet gedifferentieerd: iedereen die ingelogd is, kan alles.
+
+---
+
+## ❌ NIET in MVP (expliciet uitgesloten, met reden)
+
+| Item | Waarom uitgesloten | Wanneer wel? |
+|---|---|---|
+| **Form builder** (eigen formulieren ontwerpen) | Te open scope, kan zelf een product worden | Misschien LATER, na SaaS-sprong |
+| **AI-hulp** (chatbot, auto-rapportage, etc.) | Te open scope, eerst basis solide | LATER, met **smalle** scope |
+| **Stripe / Pay.nl** (online betalingen) | Hoort bij SaaS-sprong, niet bij admin-tool | SaaS-fase |
+| **Signup / publieke onboarding** | Eerst eigen moskee, dan publiek | SaaS-fase |
+| **Audit log** (wie deed wat wanneer) | Nice voor SaaS, niet voor één moskee | SaaS-fase |
+| **AVG-export-knoppen voor leden** ("alles over mij") | Niet juridisch verplicht voor één moskee, wel voor SaaS | SaaS-fase |
+| **Geavanceerd rollen-/permissies-UI** | DB ondersteunt het, UI komt later | SaaS-fase |
+| **Automatische reminders (cron)** | Cron-setup + testen + rate-limiting = risico | NEXT, na MVP |
+| **Native mobiele app voor leden** | Heel ander product, eigen team-werk | Geen plan |
+| **Publieke event-ticketing** (Eventbrite-stijl) | Andere markt, andere UX | Geen plan |
+| **Boekhouding / accounting** | Moneybird-werk; wij exporteren ernaartoe | Geen plan |
+| **Gebedstijden / Quran / kalender** | Voor leden-apps, niet bestuur-tool | Geen plan |
+
+---
+
+## Open technische beslissingen (later, in spec-fase)
+
+Niet voor scope-niveau, wel iets om te onthouden:
+
+- **E-mail-provider:** Resend / Postmark / Supabase Auth — kiezen vóór we e-mail-feature bouwen
+- **Handtekening-library:** voor ANBI-formulier (signature_pad / react-signature-canvas) — testen op risk vóór we 'm in critical path zetten
+- **PDF-generatie:** server-side (puppeteer/react-pdf) of client-side — vóór ANBI + cashgeld-feature
+
+Deze komen elk in een eigen `docs/superpowers/specs/` bestand.
+
+---
+
+## Hoe dit document gebruikt wordt
+
+- Bij elk nieuw idee: "staat dit in WEL of NEE?" Niet allebei, niet "later toevoegen aan WEL".
+- Bij scope-discussie: dit document wint. Wijzigen mag, maar bewust en met datum in `decisions.md`.
+- Bij elke spec in `docs/superpowers/specs/`: verwijst expliciet naar welke MVP-scope-regel het invult.
