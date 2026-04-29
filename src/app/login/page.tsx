@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { MosqonLogo } from "@/components/MosqonLogo";
 import { supabase } from "../lib/supabase";
 
 export default function LoginPage() {
@@ -36,12 +37,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top logo bar */}
       <header className="h-14 flex items-center px-8 border-b border-border shrink-0">
-        <div className="flex items-center gap-2">
-          <Shield size={18} className="text-primary" />
-          <span className="font-sans text-[13px] font-bold text-foreground">
-            Nieuwe Moskee
-          </span>
-        </div>
+        <MosqonLogo
+          className="h-8 w-auto text-foreground"
+          ariaLabel="Mosqon"
+        />
       </header>
 
       {/* Centered form */}
@@ -126,7 +125,7 @@ export default function LoginPage() {
       {/* Footer */}
       <footer className="h-10 flex items-center justify-center border-t border-border shrink-0">
         <p className="text-[11px] text-muted-foreground">
-          Nieuwe Moskee · ANBI Dashboard
+          Powered by Mosqon · Digitaal beheer voor moskeeën
         </p>
       </footer>
     </div>
