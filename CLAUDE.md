@@ -6,7 +6,7 @@ Dit bestand wordt elke sessie automatisch geladen. Lees het volledig voordat je 
 
 ## Wat is dit project?
 
-Een Nederlandse SaaS voor moskee-administratie (leden, donaties, toezeggingen, ondernemers, evenementen, ANBI). Solo project, full-time gebouwd door een **vibe coder** met Claude Code als AI-collega.
+Een Nederlandse SaaS voor moskee-administratie, met in de basis leden, donaties en toezeggingen. Later mogelijk uitgebreid met ondernemers, evenementen en ANBI-gerelateerde functies. Solo project, full-time gebouwd door een **product/UX-Designer** met Claude Code als AI-collega.
 
 **Verplichte leesvolgorde voor context:**
 1. [`docs/product/vision.md`](docs/product/vision.md) — wie/waarom/wat-niet
@@ -20,12 +20,12 @@ Bij "waarom"-vragen van de gebruiker: kijk eerst in `decisions.md`.
 
 ## Werkregels (niet-onderhandelbaar)
 
-1. **Stel altijd eerst vragen voordat je bouwt.** Geen aannames over scope, datamodel of UX. Vibe coder = jij bent de tech-expert, hij bedenkt het product. Help hem helder krijgen wat hij wil voor je code schrijft.
+1. **Stel eerst vragen als scope, datamodel, UX-flow** of technische aanpak onduidelijk is. Geen aannames over grote keuzes. Bij kleine, duidelijke wijzigingen mag je een kort plan geven en daarna uitvoeren na bevestiging.
 2. **Leg techniek uit tussen haakjes.** Voorbeeld: "We zetten een RLS-policy *(database-regel die zorgt dat moskee X moskee Y's data niet ziet)* op de toezeggingen-tabel."
-3. **Geen nieuwe features zonder spec.** Iedere nieuwe feature/pijler krijgt eerst een spec-document in `docs/superpowers/specs/`. Geen direct doorlopen van idee → code.
+3. **Geen nieuwe features of structurele wijzigingen zonder spec**. Kleine bugfixes, copy changes en UI-polish hebben geen aparte spec nodig, maar wel een korte uitleg vooraf.
 4. **Geen scope uitbreiding zonder discussie.** Als iets niet in `mvp-scope.md` staat, bouw het niet. Bij twijfel: vraag eerst, log de keuze in `decisions.md`.
 5. **Ideeën gaan naar `docs/product/ideas.md`**, niet direct in code. Eén regel per idee, brain dump.
-6. **Werk in fases per feature:** brainstorm → spec → plan → code. Niet mengen.
+6. **Werk in fases per feature:** brainstorm → spec → plan → code → test → review. Niet mengen.
 7. **Voor elke beslissing met blijvend effect:** schrijf één entry in `decisions.md` met datum, waarom, en herzieningstrigger.
 
 ---
@@ -54,7 +54,7 @@ Database (Supabase, in `supabase/migrations/`):
 - **Multi-tenant-ready code:** elke nieuwe tabel krijgt `organization_id`. Elke query filtert op de huidige moskee, ook al is die hardcoded. Geen "Nieuwe Moskee" string in code.
 - **Rollen:** `admin` / `board` / `committee` op `organization_members`. Code mag het uitlezen, maar UI-permissies komen pas in SaaS-fase. Voor MVP: iedereen ingelogd kan alles.
 - **Geen comments** die de code beschrijven (de namen doen dat). Alleen comments voor het *waarom* bij niet-evidente keuzes.
-- **Verifieer voor je "klaar" zegt:** `npm run build` moet groen zijn, en bij UI-werk moet je het in de browser hebben gezien.
+- **Verifieer voor je "klaar" zegt:** `npm run build` moet groen zijn, en bij UI-werk moet je het in de browser hebben gezien. Gebruik daarnaast npm run lint of npm run typecheck als deze scripts beschikbaar zijn in package.json.
 
 ---
 
@@ -77,6 +77,53 @@ Database (Supabase, in `supabase/migrations/`):
 - **Plans** (in welke stappen): `docs/superpowers/plans/YYYY-MM-DD-<onderwerp>.md`
 
 Bij elk plan: verwijs naar de regel in `mvp-scope.md` die dit invult. Geen orphaned plans.
+
+---
+
+## Manier van samenwerken
+De gebruiker is product/UX-gedreven en gebruikt Claude Code als technische AI-collega.
+
+Werk niet als simpele code-uitvoerder. Denk actief mee, maar neem geen grote product- of scopebeslissingen zonder overleg.
+
+Bij elke taak:
+1. Lees eerst de relevante context.
+2. Vat kort samen wat je begrijpt.
+3. Geef een klein plan.
+4. Wacht op akkoord voordat je code wijzigt, behalve bij expliciete kleine tekst- of stylingaanpassingen.
+5. Werk in kleine stappen.
+6. Controleer met build/lint waar relevant.
+7. Sluit af met wat is aangepast, welke bestanden geraakt zijn en wat de gebruiker handmatig moet testen.
+
+---
+## Nieuwe sessies en context
+
+Bij een nieuwe Claude Code sessie:
+1. Lees dit bestand volledig.
+2. Volg de verplichte leesvolgorde.
+3. Lees alleen specs/plans die relevant zijn voor de huidige taak.
+4. Vraag de gebruiker om de huidige taak in één zin te bevestigen als de context onduidelijk is.
+
+Lees niet automatisch alle oude specs en plans. Dat geeft te veel ruis.
+
+---
+
+## UX en designregels
+
+- Houd gebruikers zoveel mogelijk in context.
+- Gebruik dialogs/modals voor acties vanuit het dashboard wanneer dat logisch is.
+- Lege staten moeten altijd uitleg geven én een duidelijke volgende actie tonen.
+- Vermijd losse paginawissels voor kleine taken.
+- Houd dashboardpagina’s rustig, overzichtelijk en Nederlands.
+- Gebruik bestaande shadcn-componenten en projecttokens.
+- Bij UI-werk: controleer spacing, alignment, hiërarchie, responsive gedrag en lege staten.
+
+---
+
+Maak onderscheid tussen:
+- Feature: eerst spec en plan
+- Bugfix: korte analyse en fix
+- UI-polish: korte uitleg en kleine wijziging
+- Idee: alleen vastleggen in ideas.md, niet bouwen
 
 ---
 
