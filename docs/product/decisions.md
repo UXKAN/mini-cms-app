@@ -104,6 +104,14 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 - **MVP-implicatie:** Subdomein `notificatie.mosqon.com` is **al door de gebruiker aangemaakt** in DNS. Resterende stap: domein bij Resend verifiëren (DNS records voor SPF/DKIM/DMARC). Daarna kan `GIFT_FROM_EMAIL` direct switchen van `onboarding@resend.dev` naar `gift@notificatie.mosqon.com` — geen wachten op SaaS-sprong nodig.
 - **Herzieningstrigger:** Als een ANBI-moskee om compliance-overwegingen vereist dat mails vanaf hun eigen domein komen (zeldzaam), kan voor die moskee Pad B aangezet worden zonder de standaard te wijzigen.
 
+## 2026-05-01 — Claude beheert externe integraties actief
+
+- **Beslissing:** Claude is proactief verantwoordelijk voor het koppelen, controleren en uitvoeren van taken rondom externe tools (Vercel, Supabase, Resend, Cloud86, en toekomstige services). De gebruiker hoeft niet zelf uit te zoeken welke stappen nodig zijn — Claude geeft commands en instructies waar nodig en voert zelf uit waar er CLI-toegang is.
+- **Waarom:** Externe-service-setup en debugging kost veel tijd als de gebruiker handmatig moet schakelen tussen dashboards. Tijdens Vercel/Resend-setup op deze dag bleek dat Claude met directe CLI-toegang veel sneller debugt (logs ophalen, env vars verifiëren, redeploys triggeren). Dit voorkomt screenshot-foutopsporing-loops.
+- **Concrete werkafspraken:** Zie sectie "Externe services en integraties" in `CLAUDE.md`. Praktische env-var- en config-referentie staat in `docs/product/integrations.md`.
+- **Veiligheid:** Geen secrets/keys in markdown of repo. Alleen variabele-namen + waar ze ingesteld moeten staan. Bij destructieve acties (DNS, env var rm, redeploy) eerst korte uitleg + bevestiging vragen voordat Claude uitvoert.
+- **Herzieningstrigger:** Als Claude te autonoom wijzigingen doorvoert die niet gewenst zijn, of juist te terughoudend is ondanks beschikbare CLI-toegang. Beide kunnen leiden tot scherpere afspraken.
+
 ## 2026-04-27 — Niet-doelen vastgelegd
 
 - **Beslissing:** Volgende categorieën zijn definitief geen doel: boekhouding, publieke website/CMS, publieke event-ticketing, gebedstijden/Quran-features, e-mail-marketing, multi-vestiging-per-account, native mobiele app voor leden.

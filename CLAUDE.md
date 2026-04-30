@@ -95,6 +95,31 @@ Bij elke taak:
 7. Sluit af met wat is aangepast, welke bestanden geraakt zijn en wat de gebruiker handmatig moet testen.
 
 ---
+
+## Externe services en integraties
+
+Voor Vercel, Supabase, Resend, Cloud86 (DNS) en alle externe services die we later toevoegen (bijv. Stripe), is Claude **proactief** verantwoordelijk. De gebruiker hoeft niet handmatig uit te zoeken welke stappen nodig zijn.
+
+**Bij integratie-werk:**
+
+1. **Identificeer wat nodig is.** Welke account, welke API-keys, welke env vars, welke DNS-records, welke webhooks. Vraag het zo nodig aan de gebruiker, maar weet eerst wat er ontbreekt.
+2. **Controleer huidige instellingen** als er iets misgaat. Vraag logs op, lees env vars uit, check dashboards. Niet aannemen dat het wel goed staat — verifieer.
+3. **Pas projectbestanden zelf aan** waar dat kan: env-var-namen documenteren in `docs/product/integrations.md`, code-paden aanpassen, configuratie via CLI.
+4. **Geef duidelijke commands** voor stappen die de gebruiker zelf moet doen (browser-login, secret-paste in dashboard, DNS-record bij domeinprovider).
+5. **Verifieer end-to-end:** env vars set → redeploy → log-check. Niet "klaar" zeggen op basis van het feit dat een command slaagde.
+6. **Geen secrets in de codebase of in markdown.** Alleen variabele-namen + waar ze ingesteld moeten zijn. Waarden blijven in dashboards en `.env.local`.
+7. **Bij twijfel of bij destructieve acties** (DNS-wijziging, env var rm, redeploy met breaking change): leg eerst uit wat je gaat doen, vraag bevestiging, dan pas uitvoeren.
+
+**Documentatie:** Welke env-vars per service nodig zijn en waar ze ingesteld moeten staan, hoort in [`docs/product/integrations.md`](docs/product/integrations.md). Lees dat bestand voor je aan integratie-werk begint.
+
+**CLI-toegang voor Claude (huidige stand):**
+- **Vercel:** `npx vercel@52.2.1` (project gelinkt in `.vercel/`, ingelogd als `uxkan`). Pin op v52 — v53.0.1 is broken op npm.
+- **Supabase:** geen CLI-toegang — dashboard-instructies geven aan de gebruiker.
+- **Resend:** geen CLI-toegang — dashboard-instructies geven.
+- **Cloud86 (DNS):** geen toegang — gebruiker doet handmatig in [my.cloud86.io](https://my.cloud86.io).
+
+---
+
 ## Nieuwe sessies en context
 
 Bij een nieuwe Claude Code sessie:
