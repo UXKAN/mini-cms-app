@@ -528,7 +528,10 @@ function DateInput(props: React.ComponentProps<typeof Input>) {
           type="date"
           {...props}
           className={cn(
-            "block h-9 w-full min-w-0 appearance-none",
+            "block !h-9 w-full min-w-0 appearance-none",
+            "[&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit]:h-full",
+            "[&::-webkit-datetime-edit-fields-wrapper]:p-0",
+            "[&::-webkit-date-and-time-value]:p-0 [&::-webkit-date-and-time-value]:h-full [&::-webkit-date-and-time-value]:min-w-0",
             props.className
           )}
         />
