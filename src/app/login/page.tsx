@@ -26,7 +26,7 @@ export default function LoginPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
       setLoading(false);
       return;
     }
@@ -134,4 +134,24 @@ export default function LoginPage() {
       </footer>
     </div>
   );
+}
+
+function translateAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("invalid login credentials") || m.includes("invalid_credentials")) {
+    return "Onjuist e-mailadres of wachtwoord.";
+  }
+  if (m.includes("email not confirmed")) {
+    return "Je e-mailadres is nog niet bevestigd. Check je inbox voor de bevestigingsmail.";
+  }
+  if (m.includes("rate limit")) {
+    return "Te veel inlogpogingen. Probeer het over een paar minuten opnieuw.";
+  }
+  if (m.includes("user not found")) {
+    return "Geen account gevonden met dit e-mailadres.";
+  }
+  if (m.includes("network")) {
+    return "Geen verbinding. Controleer je internet en probeer opnieuw.";
+  }
+  return "Inloggen mislukt. Probeer het opnieuw.";
 }
