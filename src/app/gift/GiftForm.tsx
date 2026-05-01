@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   Card,
   CardContent,
@@ -515,6 +515,7 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 
 function DateInput(props: React.ComponentProps<typeof Input>) {
   const [isIOS, setIsIOS] = useState(false);
+  const dateId = useId();
 
   useEffect(() => {
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
@@ -528,7 +529,7 @@ function DateInput(props: React.ComponentProps<typeof Input>) {
         : "";
 
     return (
-      <div className="relative w-full">
+      <label htmlFor={dateId} className="relative block w-full">
         <Input
           type="text"
           readOnly
@@ -537,9 +538,10 @@ function DateInput(props: React.ComponentProps<typeof Input>) {
           placeholder="dd-mm-jjjj"
           autoComplete={props.autoComplete}
           data-error={props["data-error" as keyof typeof props]}
-          className={cn("pointer-events-none", props.className)}
+          className={cn("cursor-pointer", props.className)}
         />
         <input
+          id={dateId}
           type="date"
           value={value}
           onChange={
@@ -548,7 +550,7 @@ function DateInput(props: React.ComponentProps<typeof Input>) {
           aria-label="Datum"
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />
-      </div>
+      </label>
     );
   }
 
