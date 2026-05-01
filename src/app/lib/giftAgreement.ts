@@ -17,10 +17,9 @@ export const giftSchema = z
     schenker_geboortedatum: z.string().min(1, "Geboortedatum is verplicht"),
     schenker_telefoon: z.string().min(6, "Vul een geldig telefoonnummer in"),
     schenker_adres: z.string().min(5, "Vul een geldig adres in"),
-    schenker_postcode_woonplaats: z
-      .string()
-      .min(7, "Postcode en woonplaats verplicht"),
-    schenker_land: z.enum(COUNTRIES),
+    schenker_postcode: z.string().min(4, "Vul een geldige postcode in"),
+    schenker_woonplaats: z.string().min(2, "Vul de woonplaats in"),
+    schenker_land: z.string().min(2, "Vul het land in"),
     schenker_email: z.string().email("Vul een geldig e-mailadres in"),
 
     type: z.enum(["periodieke", "eenmalige"]),
@@ -92,8 +91,9 @@ export type GiftFormState = {
   schenker_geboortedatum: string;
   schenker_telefoon: string;
   schenker_adres: string;
-  schenker_postcode_woonplaats: string;
-  schenker_land: (typeof COUNTRIES)[number];
+  schenker_postcode: string;
+  schenker_woonplaats: string;
+  schenker_land: string;
   schenker_email: string;
 
   type: GiftType;
@@ -117,7 +117,8 @@ export const emptyGiftFormState: GiftFormState = {
   schenker_geboortedatum: "",
   schenker_telefoon: "",
   schenker_adres: "",
-  schenker_postcode_woonplaats: "",
+  schenker_postcode: "",
+  schenker_woonplaats: "",
   schenker_land: "Nederland",
   schenker_email: "",
 

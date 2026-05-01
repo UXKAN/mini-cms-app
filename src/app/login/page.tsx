@@ -71,6 +71,8 @@ export default function LoginPage() {
 
               <form onSubmit={handleLogin} className="flex flex-col gap-3">
                 <Input
+                  id="email"
+                  name="email"
                   type="email"
                   placeholder="E-mailadres"
                   value={email}
@@ -81,6 +83,8 @@ export default function LoginPage() {
 
                 <div className="relative">
                   <Input
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Wachtwoord"
                     value={password}

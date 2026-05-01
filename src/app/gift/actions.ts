@@ -52,7 +52,8 @@ export async function submitGiftAgreement(
       schenker_geboortedatum: data.schenker_geboortedatum,
       schenker_telefoon: data.schenker_telefoon,
       schenker_adres: data.schenker_adres,
-      schenker_postcode_woonplaats: data.schenker_postcode_woonplaats,
+      schenker_postcode: data.schenker_postcode,
+      schenker_woonplaats: data.schenker_woonplaats,
       schenker_land: data.schenker_land,
       schenker_email: data.schenker_email,
       bedrag_per_maand: data.bedrag_per_maand

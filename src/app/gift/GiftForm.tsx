@@ -8,14 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowRight, AlertCircle, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignaturePad } from "@/components/SignaturePad";
 import { OrgFooterCard } from "./_components/OrgFooterCard";
@@ -113,20 +106,18 @@ export function GiftForm() {
   }
 
   const isPeriodiek = form.type === "periodieke";
-  const giftTypeLabel = isPeriodiek ? "Periodieke Gift" : "Eenmalige Gift";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Hero */}
       <div className="space-y-3">
-        <h1 className="font-serif text-4xl sm:text-5xl leading-tight">
-          <span className="block text-foreground">Overeenkomst</span>
-          <span className="block text-primary">{giftTypeLabel}</span>
+        <h1 className="font-serif text-4xl sm:text-5xl leading-tight text-primary break-words">
+          Schenkingsovereenkomst
         </h1>
         <p className="text-muted-foreground max-w-xl">
           Dit formulier legt een bindende schenkingsovereenkomst vast. Na
           ondertekening ontvangt u een bevestiging per e-mail met uw
-          referentienummer.
+          referentienummer. Alle velden zijn verplicht.
         </p>
       </div>
 
@@ -135,12 +126,15 @@ export function GiftForm() {
         <CardContent className="p-6 sm:p-8 space-y-6">
           <StepHeader n={1} title="Gegevens schenker" />
 
+          <SubHeader>Je gegevens</SubHeader>
+
           <Field
             label="Voor- en achternaam"
             required
             error={errors.schenker_naam}
           >
             <Input
+              autoComplete="name"
               value={form.schenker_naam}
               onChange={(e) => update("schenker_naam", e.target.value)}
               placeholder="Jan de Vries"
@@ -154,8 +148,8 @@ export function GiftForm() {
               required
               error={errors.schenker_geboortedatum}
             >
-              <Input
-                type="date"
+              <DateInput
+                autoComplete="bday"
                 value={form.schenker_geboortedatum}
                 onChange={(e) =>
                   update("schenker_geboortedatum", e.target.value)
@@ -170,6 +164,7 @@ export function GiftForm() {
               error={errors.schenker_telefoon}
             >
               <Input
+                autoComplete="tel"
                 type="tel"
                 value={form.schenker_telefoon}
                 onChange={(e) => update("schenker_telefoon", e.target.value)}
@@ -179,54 +174,74 @@ export function GiftForm() {
             </Field>
           </div>
 
-          <Field label="Adres" required error={errors.schenker_adres}>
-            <Input
-              value={form.schenker_adres}
-              onChange={(e) => update("schenker_adres", e.target.value)}
-              placeholder="Straatnaam 12"
-              data-error={!!errors.schenker_adres}
-            />
-          </Field>
+          <SubHeader>Adresgegevens</SubHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
+            <Field label="Adres" required error={errors.schenker_adres}>
+              <Input
+                autoComplete="street-address"
+                value={form.schenker_adres}
+                onChange={(e) => update("schenker_adres", e.target.value)}
+                placeholder="Straatnaam 12"
+                data-error={!!errors.schenker_adres}
+              />
+            </Field>
+
+            <Field
+              label="Postcode"
+              required
+              error={errors.schenker_postcode}
+            >
+              <Input
+                autoComplete="postal-code"
+                value={form.schenker_postcode}
+                onChange={(e) =>
+                  update("schenker_postcode", e.target.value)
+                }
+                placeholder="1234 AB"
+                data-error={!!errors.schenker_postcode}
+              />
+            </Field>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field
-              label="Postcode en woonplaats"
+              label="Woonplaats"
               required
-              error={errors.schenker_postcode_woonplaats}
+              error={errors.schenker_woonplaats}
             >
               <Input
-                value={form.schenker_postcode_woonplaats}
+                autoComplete="address-level2"
+                value={form.schenker_woonplaats}
                 onChange={(e) =>
-                  update("schenker_postcode_woonplaats", e.target.value)
+                  update("schenker_woonplaats", e.target.value)
                 }
-                placeholder="1234 AB Enschede"
-                data-error={!!errors.schenker_postcode_woonplaats}
+                placeholder="Enschede"
+                data-error={!!errors.schenker_woonplaats}
               />
             </Field>
 
             <Field label="Land" required error={errors.schenker_land}>
-              <Select
+              <Input
+                list="schenker-land-suggesties"
+                autoComplete="country-name"
                 value={form.schenker_land}
-                onValueChange={(v) =>
-                  update("schenker_land", v as GiftFormState["schenker_land"])
-                }
-              >
-                <SelectTrigger data-error={!!errors.schenker_land}>
-                  <SelectValue placeholder="Selecteer een land" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => update("schenker_land", e.target.value)}
+                placeholder="Nederland"
+                data-error={!!errors.schenker_land}
+                className="[&::-webkit-calendar-picker-indicator]:hidden"
+              />
+              <datalist id="schenker-land-suggesties">
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </Field>
           </div>
 
           <Field label="E-mailadres" required error={errors.schenker_email}>
             <Input
+              autoComplete="email"
               type="email"
               value={form.schenker_email}
               onChange={(e) => update("schenker_email", e.target.value)}
@@ -280,8 +295,7 @@ export function GiftForm() {
                 required
                 error={errors.startdatum}
               >
-                <Input
-                  type="date"
+                <DateInput
                   value={form.startdatum}
                   onChange={(e) => update("startdatum", e.target.value)}
                   data-error={!!errors.startdatum}
@@ -406,8 +420,7 @@ export function GiftForm() {
               required
               error={errors.ondertekening_datum}
             >
-              <Input
-                type="date"
+              <DateInput
                 value={form.ondertekening_datum}
                 onChange={(e) =>
                   update("ondertekening_datum", e.target.value)
@@ -489,6 +502,30 @@ function StepHeader({ n, title }: { n: number; title: string }) {
   );
 }
 
+function SubHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-2">
+      {children}
+    </h3>
+  );
+}
+
+function DateInput(props: React.ComponentProps<typeof Input>) {
+  return (
+    <div className="relative">
+      <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        type="date"
+        {...props}
+        className={cn(
+          "pl-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0",
+          props.className
+        )}
+      />
+    </div>
+  );
+}
+
 function Field({
   label,
   required,
@@ -502,10 +539,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-medium text-foreground">
-        {label}
-        {required && <span className="text-primary ml-0.5">*</span>}
-      </Label>
+      <Label className="text-sm font-medium text-foreground">{label}</Label>
       {children}
       {error && (
         <p className="text-xs text-destructive mt-1" data-error="true">

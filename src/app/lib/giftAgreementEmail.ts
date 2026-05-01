@@ -106,7 +106,8 @@ export function buildConfirmationEmail(
                 ${bedragRegel}
                 ${row("Naam", escapeHtml(data.schenker_naam))}
                 ${row("Adres", escapeHtml(data.schenker_adres))}
-                ${row("Postcode/woonplaats", escapeHtml(data.schenker_postcode_woonplaats))}
+                ${row("Postcode", escapeHtml(data.schenker_postcode))}
+                ${row("Woonplaats", escapeHtml(data.schenker_woonplaats))}
                 ${row("Land", escapeHtml(data.schenker_land))}
                 ${row("E-mail", escapeHtml(data.schenker_email))}
                 ${row("Telefoon", escapeHtml(data.schenker_telefoon))}
@@ -175,7 +176,8 @@ export function buildConfirmationEmail(
       : `Bedrag: ${fmtBedrag(data.bedrag_eenmalig!)}`,
     `Naam: ${data.schenker_naam}`,
     `Adres: ${data.schenker_adres}`,
-    `Postcode/woonplaats: ${data.schenker_postcode_woonplaats}`,
+    `Postcode: ${data.schenker_postcode}`,
+    `Woonplaats: ${data.schenker_woonplaats}`,
     `Land: ${data.schenker_land}`,
     `E-mail: ${data.schenker_email}`,
     `Telefoon: ${data.schenker_telefoon}`,
