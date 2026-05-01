@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -515,31 +515,45 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 
 function DateInput(props: React.ComponentProps<typeof Input>) {
   const [isIOS, setIsIOS] = useState(false);
+  const hiddenRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
   }, []);
 
   if (isIOS) {
-    const isEmpty = !props.value;
+    const value = typeof props.value === "string" ? props.value : "";
+    const formatted =
+      value.length === 10
+        ? `${value.slice(8, 10)}-${value.slice(5, 7)}-${value.slice(0, 4)}`
+        : "";
+    const openPicker = () => {
+      hiddenRef.current?.showPicker?.();
+    };
+
     return (
       <div className="relative w-full">
         <Input
-          type="date"
-          {...props}
-          className={cn(
-            "block !h-9 w-full min-w-0 appearance-none",
-            "[&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit]:h-full",
-            "[&::-webkit-datetime-edit-fields-wrapper]:p-0",
-            "[&::-webkit-date-and-time-value]:p-0 [&::-webkit-date-and-time-value]:h-full [&::-webkit-date-and-time-value]:min-w-0",
-            props.className
-          )}
+          type="text"
+          readOnly
+          value={formatted}
+          placeholder="dd-mm-jjjj"
+          onClick={openPicker}
+          autoComplete={props.autoComplete}
+          data-error={props["data-error" as keyof typeof props]}
+          className={cn("cursor-pointer", props.className)}
         />
-        {isEmpty && (
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
-            dd-mm-jjjj
-          </span>
-        )}
+        <input
+          ref={hiddenRef}
+          type="date"
+          value={value}
+          onChange={
+            props.onChange as React.ChangeEventHandler<HTMLInputElement>
+          }
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden
+        />
       </div>
     );
   }
