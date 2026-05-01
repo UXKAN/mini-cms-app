@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -515,7 +515,6 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 
 function DateInput(props: React.ComponentProps<typeof Input>) {
   const [isIOS, setIsIOS] = useState(false);
-  const hiddenRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
@@ -527,32 +526,27 @@ function DateInput(props: React.ComponentProps<typeof Input>) {
       value.length === 10
         ? `${value.slice(8, 10)}-${value.slice(5, 7)}-${value.slice(0, 4)}`
         : "";
-    const openPicker = () => {
-      hiddenRef.current?.showPicker?.();
-    };
 
     return (
       <div className="relative w-full">
         <Input
           type="text"
           readOnly
+          tabIndex={-1}
           value={formatted}
           placeholder="dd-mm-jjjj"
-          onClick={openPicker}
           autoComplete={props.autoComplete}
           data-error={props["data-error" as keyof typeof props]}
-          className={cn("cursor-pointer", props.className)}
+          className={cn("pointer-events-none", props.className)}
         />
         <input
-          ref={hiddenRef}
           type="date"
           value={value}
           onChange={
             props.onChange as React.ChangeEventHandler<HTMLInputElement>
           }
-          className="sr-only"
-          tabIndex={-1}
-          aria-hidden
+          aria-label="Datum"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />
       </div>
     );
