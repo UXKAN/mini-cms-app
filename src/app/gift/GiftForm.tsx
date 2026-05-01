@@ -111,8 +111,11 @@ export function GiftForm() {
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Hero */}
       <div className="space-y-3">
-        <h1 className="font-serif text-4xl sm:text-5xl leading-tight text-primary break-words">
-          Schenkingsovereenkomst
+        <h1
+          lang="nl"
+          className="font-serif text-3xl sm:text-5xl leading-tight text-primary"
+        >
+          Schenkings&shy;overeenkomst
         </h1>
         <p className="text-muted-foreground max-w-xl">
           Dit formulier legt een bindende schenkingsovereenkomst vast. Na
@@ -513,12 +516,14 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 function DateInput(props: React.ComponentProps<typeof Input>) {
   return (
     <div className="relative w-full">
-      <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
       <Input
         type="date"
         {...props}
         className={cn(
-          "w-full min-w-0 pl-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0",
+          "block w-full min-w-0 max-w-full appearance-none pl-10",
+          "[&::-webkit-date-and-time-value]:text-left [&::-webkit-date-and-time-value]:min-w-0",
+          "[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0",
           props.className
         )}
       />
