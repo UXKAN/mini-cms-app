@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,9 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowRight, AlertCircle, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DatePicker } from "@/components/DatePicker";
 import { SignaturePad } from "@/components/SignaturePad";
 import { OrgFooterCard } from "./_components/OrgFooterCard";
 import { ThankYou } from "./ThankYou";
@@ -152,12 +151,13 @@ export function GiftForm() {
               required
               error={errors.schenker_geboortedatum}
             >
-              <DatePicker
-                yearSelector
+              <DateInput
+                autoComplete="bday"
                 value={form.schenker_geboortedatum}
-                onChange={(v) => update("schenker_geboortedatum", v)}
-                placeholder="Kies geboortedatum"
-                hasError={!!errors.schenker_geboortedatum}
+                onChange={(e) =>
+                  update("schenker_geboortedatum", e.target.value)
+                }
+                data-error={!!errors.schenker_geboortedatum}
               />
             </Field>
 
@@ -298,11 +298,10 @@ export function GiftForm() {
                 required
                 error={errors.startdatum}
               >
-                <DatePicker
+                <DateInput
                   value={form.startdatum}
-                  onChange={(v) => update("startdatum", v)}
-                  placeholder="Kies startdatum"
-                  hasError={!!errors.startdatum}
+                  onChange={(e) => update("startdatum", e.target.value)}
+                  data-error={!!errors.startdatum}
                 />
               </Field>
             </div>
@@ -424,11 +423,12 @@ export function GiftForm() {
               required
               error={errors.ondertekening_datum}
             >
-              <DatePicker
+              <DateInput
                 value={form.ondertekening_datum}
-                onChange={(v) => update("ondertekening_datum", v)}
-                placeholder="Kies datum"
-                hasError={!!errors.ondertekening_datum}
+                onChange={(e) =>
+                  update("ondertekening_datum", e.target.value)
+                }
+                data-error={!!errors.ondertekening_datum}
               />
             </Field>
           </div>
@@ -510,6 +510,39 @@ function SubHeader({ children }: { children: React.ReactNode }) {
     <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-2">
       {children}
     </h3>
+  );
+}
+
+function DateInput(props: React.ComponentProps<typeof Input>) {
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
+  }, []);
+
+  if (isIOS) {
+    return (
+      <Input
+        type="date"
+        {...props}
+        className={cn("block w-full min-w-0", props.className)}
+      />
+    );
+  }
+
+  return (
+    <div className="relative w-full">
+      <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        type="date"
+        {...props}
+        className={cn(
+          "block w-full min-w-0 pl-10",
+          "[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0",
+          props.className
+        )}
+      />
+    </div>
   );
 }
 
