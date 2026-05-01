@@ -521,7 +521,7 @@ function DateInput(props: React.ComponentProps<typeof Input>) {
         type="date"
         {...props}
         className={cn(
-          "block w-full min-w-0 max-w-full appearance-none pl-10",
+          "block w-full min-w-0 max-w-full pl-10",
           "[&::-webkit-date-and-time-value]:text-left [&::-webkit-date-and-time-value]:min-w-0",
           "[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0",
           props.className
