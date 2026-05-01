@@ -521,12 +521,21 @@ function DateInput(props: React.ComponentProps<typeof Input>) {
   }, []);
 
   if (isIOS) {
+    const isEmpty = !props.value;
     return (
-      <Input
-        type="date"
-        {...props}
-        className={cn("block w-full min-w-0", props.className)}
-      />
+      <div className="relative w-full">
+        <Input
+          type="date"
+          {...props}
+          style={{ height: "2.25rem", ...(props.style ?? {}) }}
+          className={cn("block h-9 w-full min-w-0", props.className)}
+        />
+        {isEmpty && (
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
+            dd-mm-jjjj
+          </span>
+        )}
+      </div>
     );
   }
 
