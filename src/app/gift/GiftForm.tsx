@@ -514,14 +514,14 @@ function SubHeader({ children }: { children: React.ReactNode }) {
 }
 
 function DateInput(props: React.ComponentProps<typeof Input>) {
-  const [isIOS, setIsIOS] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const dateId = useId();
 
   useEffect(() => {
-    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
+    setIsMobile(/iPad|iPhone|iPod|Android/i.test(navigator.userAgent));
   }, []);
 
-  if (isIOS) {
+  if (isMobile) {
     const value = typeof props.value === "string" ? props.value : "";
     const formatted =
       value.length === 10
