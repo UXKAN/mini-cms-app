@@ -23,34 +23,21 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset: var(--background);
+  --color-selected: var(--selected);
+  --color-accent-light: var(--accent-light);
+  --color-accent-dark: var(--accent-dark);
 }
 
 :root {
   color-scheme: light;
 
-  /* ── Existing app vars (do not remove – used by imports, onboarding pages) ── */
-  --bg: oklch(0.968 0.007 75);
-  --surface: oklch(0.995 0.003 75);
-  --border: oklch(0.89 0.009 75);
-  --border-focus: oklch(0.52 0.13 165);
-  --ink: oklch(0.18 0.02 65);
-  --ink-muted: oklch(0.48 0.015 65);
-  --ink-subtle: oklch(0.68 0.01 65);
-  --accent: oklch(0.52 0.13 165);
-  --accent-light: oklch(0.94 0.04 165);
-  --accent-dark: oklch(0.40 0.13 165);
-  --error: oklch(0.55 0.18 25);
-  --error-light: oklch(0.95 0.04 25);
-  --success: oklch(0.55 0.15 150);
-  --success-light: oklch(0.94 0.04 150);
-  --warn: oklch(0.65 0.15 80);
-  --warn-light: oklch(0.95 0.05 80);
-  --radius: 10px;
-  --radius-sm: 7px;
-  --shadow: 0 1px 3px oklch(0.18 0.02 65 / 0.05), 0 3px 10px oklch(0.18 0.02 65 / 0.05);
-  --shadow-lg: 0 4px 16px oklch(0.18 0.02 65 / 0.1), 0 16px 48px oklch(0.18 0.02 65 / 0.1);
+  /* ──────────────────────────────────────────────────────────────────────
+     SOURCE OF TRUTH — shadcn-style design tokens.
+     Wijzig een waarde hier, en zowel shadcn-utilities (bg-primary,
+     text-foreground, ...) als oude inline-styles (var(--ink), var(--bg))
+     veranderen mee, dankzij de aliases in het 2e blok hieronder.
+     ────────────────────────────────────────────────────────────────────── */
 
-  /* ── shadcn compatibility vars ── */
   --background: oklch(0.968 0.007 75);
   --foreground: oklch(0.18 0.02 65);
   --card: oklch(0.995 0.003 75);
@@ -66,25 +53,57 @@
   --accent-foreground: oklch(0.40 0.13 165);
   --destructive: oklch(0.55 0.18 25);
   --destructive-foreground: oklch(0.99 0.002 75);
+  --border: oklch(0.89 0.009 75);
   --input: oklch(0.89 0.009 75);
   --ring: oklch(0.52 0.13 165);
   --ring-offset: oklch(0.968 0.007 75);
-  /* Note: --border, --radius, --accent already defined above */
+  --selected: #007F56;
+
+  /* Status-tokens (eigen — geen 1-op-1 shadcn-equivalent) */
+  --success: oklch(0.55 0.15 150);
+  --success-light: oklch(0.94 0.04 150);
+  --warn: oklch(0.65 0.15 80);
+  --warn-light: oklch(0.95 0.05 80);
+  --error-light: oklch(0.95 0.04 25);
+
+  /* Brand-accent tints — gebruikt voor Top-5-badges, etc. */
+  --accent-light: oklch(0.94 0.04 165);
+  --accent-dark: oklch(0.40 0.13 165);
+
+  /* Layout/elevation */
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 1px 3px oklch(0.18 0.02 65 / 0.05), 0 3px 10px oklch(0.18 0.02 65 / 0.05);
+  --shadow-lg: 0 4px 16px oklch(0.18 0.02 65 / 0.1), 0 16px 48px oklch(0.18 0.02 65 / 0.1);
+
+  /* ──────────────────────────────────────────────────────────────────────
+     ALIASES — oude tokennamen, hergedefinieerd als var(...) zodat ze
+     synchroon blijven met de shadcn-vars hierboven. Bestaande inline-styles
+     (var(--ink), var(--bg), var(--accent), var(--error), var(--surface))
+     blijven werken; één bron-of-truth.
+     Migratie naar shadcn-utilities (text-foreground i.p.v. var(--ink)) is
+     een aparte cleanup-PR voor later — niet blocker voor de playground.
+     ────────────────────────────────────────────────────────────────────── */
+
+  --bg: var(--background);
+  --surface: var(--card);
+  --ink: var(--foreground);
+  --ink-muted: var(--muted-foreground);
+  --ink-subtle: oklch(0.68 0.01 65); /* geen shadcn-equivalent, eigen tint */
+  --accent: var(--primary);
+  --error: var(--destructive);
+  --border-focus: var(--ring);
 }
 
-/* Tailwind v4 places utilities inside @layer utilities. CSS Cascade Layers
-   spec gives UNLAYERED styles HIGHER precedence than layered ones, so a
-   blanket `* { padding: 0; margin: 0 }` here would override every Tailwind
-   padding/margin utility (px-4, p-6, etc.) — buttons and modal content
-   ended up flush against the edges.
-
-   Tailwind preflight already handles box-sizing and the necessary
-   margin/padding resets on body/headings/lists, so we only keep:
-   - border-color   → required for v4 (default border color is no longer set)
-   - tap-highlight  → suppresses the iOS tap flash */
-*, ::before, ::after {
-  border-color: var(--border);
-  -webkit-tap-highlight-color: transparent;
+/* Tailwind v4: default border-color reset + iOS tap-highlight reset.
+   Wrapped in @layer base zodat Tailwind's utility-classes (border-primary,
+   border-accent-dark, ...) ervan kunnen winnen — unlayered zou met de `*`
+   universele selector elke utility overrulen via cascade-layers spec. */
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--border);
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 html,
