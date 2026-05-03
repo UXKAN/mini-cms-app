@@ -3,20 +3,74 @@
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import type { GiftScenario } from "./actions";
 
 type Props = {
   referenceCode: string;
   email: string;
+  scenario: GiftScenario;
   mailWarning?: string;
   onReset: () => void;
 };
 
+function scenarioContent(scenario: GiftScenario): {
+  title: string;
+  body: React.ReactNode;
+} {
+  switch (scenario) {
+    case "eenmalige_paid":
+      return {
+        title: "Bedankt voor uw gift",
+        body: (
+          <>
+            Uw eenmalige gift is geregistreerd <strong>én de ontvangst is
+            bevestigd</strong>. Bewaar uw referentienummer voor uw administratie.
+          </>
+        ),
+      };
+    case "eenmalige_unpaid":
+      return {
+        title: "Overeenkomst geregistreerd",
+        body: (
+          <>
+            Uw eenmalige gift-overeenkomst is geregistreerd. Wij verwachten uw
+            bankoverschrijving binnenkort. Zodra het bedrag binnen is, registreren
+            wij de ontvangst.
+          </>
+        ),
+      };
+    case "periodieke_lid":
+      return {
+        title: "Welkom als lid!",
+        body: (
+          <>
+            Uw periodieke gift-overeenkomst is geregistreerd <strong>én u bent
+            toegevoegd als lid</strong> van de moskee. Welkom!
+          </>
+        ),
+      };
+    case "periodieke_geen_lid":
+      return {
+        title: "Bedankt voor uw periodieke gift",
+        body: (
+          <>
+            Uw periodieke gift-overeenkomst is geregistreerd. Uw maandelijkse
+            bijdrage komt binnen via uw bankoverschrijving.
+          </>
+        ),
+      };
+  }
+}
+
 export function ThankYou({
   referenceCode,
   email,
+  scenario,
   mailWarning,
   onReset,
 }: Props) {
+  const { title, body } = scenarioContent(scenario);
+
   return (
     <Card className="p-8 sm:p-10 text-center space-y-6">
       <div className="flex justify-center">
@@ -26,13 +80,8 @@ export function ThankYou({
       </div>
 
       <div className="space-y-2">
-        <h2 className="font-serif text-3xl text-foreground">
-          Bedankt voor uw gift
-        </h2>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Uw gift-overeenkomst is geregistreerd. Bewaar uw referentienummer
-          hieronder.
-        </p>
+        <h2 className="font-serif text-3xl text-foreground">{title}</h2>
+        <p className="text-muted-foreground max-w-md mx-auto">{body}</p>
       </div>
 
       <div className="bg-muted/50 rounded-lg py-5 px-6 inline-block">

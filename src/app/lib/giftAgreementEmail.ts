@@ -1,4 +1,5 @@
 import type { GiftFormData } from "./giftAgreement";
+import type { GiftScenario } from "../gift/actions";
 
 const PRIMARY = "#1a8c6e";
 const BG = "#f7f4ef";
@@ -36,12 +37,42 @@ function row(label: string, value: string): string {
   `;
 }
 
+function scenarioMessage(scenario: GiftScenario): {
+  intro: string;
+  textIntro: string;
+} {
+  switch (scenario) {
+    case "eenmalige_paid":
+      return {
+        intro: `Uw eenmalige gift is geregistreerd <strong>en de ontvangst is bevestigd</strong>. Bewaar deze e-mail als bevestiging.`,
+        textIntro: `Uw eenmalige gift is geregistreerd en de ontvangst is bevestigd. Bewaar deze e-mail als bevestiging.`,
+      };
+    case "eenmalige_unpaid":
+      return {
+        intro: `Uw eenmalige gift-overeenkomst is geregistreerd. Wij verwachten uw bankoverschrijving binnenkort op het IBAN onderaan deze e-mail. Zodra het bedrag binnen is, registreren wij de ontvangst.`,
+        textIntro: `Uw eenmalige gift-overeenkomst is geregistreerd. Wij verwachten uw bankoverschrijving binnenkort.`,
+      };
+    case "periodieke_lid":
+      return {
+        intro: `Uw periodieke gift-overeenkomst is geregistreerd <strong>en u bent toegevoegd als lid</strong> van de moskee. Welkom! Uw maandelijkse bijdrage komt binnen via uw bankoverschrijving.`,
+        textIntro: `Uw periodieke gift-overeenkomst is geregistreerd en u bent toegevoegd als lid van de moskee. Welkom!`,
+      };
+    case "periodieke_geen_lid":
+      return {
+        intro: `Uw periodieke gift-overeenkomst is geregistreerd. Uw maandelijkse bijdrage komt binnen via uw bankoverschrijving.`,
+        textIntro: `Uw periodieke gift-overeenkomst is geregistreerd.`,
+      };
+  }
+}
+
 export function buildConfirmationEmail(
   data: GiftFormData,
-  referenceCode: string
+  referenceCode: string,
+  scenario: GiftScenario
 ): { subject: string; html: string; text: string } {
   const isPeriodiek = data.type === "periodieke";
   const subject = `Bevestiging gift-overeenkomst — referentie #${referenceCode}`;
+  const { intro, textIntro } = scenarioMessage(scenario);
 
   const bedragRegel = isPeriodiek
     ? row("Bedrag per maand", fmtBedrag(data.bedrag_per_maand!)) +
@@ -76,9 +107,7 @@ export function buildConfirmationEmail(
                 Beste ${escapeHtml(data.schenker_naam)},
               </p>
               <p style="margin:12px 0 0 0;font-size:16px;line-height:1.5;color:${INK};">
-                Uw ${isPeriodiek ? "periodieke" : "eenmalige"} gift-overeenkomst voor HDV Selimiye / HDV Anadolu
-                ten behoeve van de Nieuwe Moskee Enschede is geregistreerd.
-                Bewaar deze e-mail als bevestiging.
+                ${intro}
               </p>
             </td>
           </tr>
@@ -165,7 +194,7 @@ export function buildConfirmationEmail(
     ``,
     `Beste ${data.schenker_naam},`,
     ``,
-    `Uw ${isPeriodiek ? "periodieke" : "eenmalige"} gift-overeenkomst voor HDV Selimiye / HDV Anadolu ten behoeve van de Nieuwe Moskee Enschede is geregistreerd. Bewaar deze e-mail als bevestiging.`,
+    textIntro,
     ``,
     `Referentienummer: #${referenceCode}`,
     ``,

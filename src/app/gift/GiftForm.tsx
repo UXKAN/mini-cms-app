@@ -8,12 +8,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SelectableCard } from "@/components/ui/selectable-card";
+import { DateOfBirthInput } from "@/components/ui/date-of-birth-input";
 import { ArrowRight, AlertCircle, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignaturePad } from "@/components/SignaturePad";
 import { OrgFooterCard } from "./_components/OrgFooterCard";
 import { ThankYou } from "./ThankYou";
-import { submitGiftAgreement } from "./actions";
+import { submitGiftAgreement, type GiftScenario } from "./actions";
 import {
   COUNTRIES,
   emptyGiftFormState,
@@ -32,6 +34,7 @@ export function GiftForm() {
   const [submitted, setSubmitted] = useState<{
     referenceCode: string;
     email: string;
+    scenario: GiftScenario;
     mailWarning?: string;
   } | null>(null);
 
@@ -78,6 +81,7 @@ export function GiftForm() {
     setSubmitted({
       referenceCode: result.referenceCode,
       email: form.schenker_email,
+      scenario: result.scenario,
       mailWarning: result.mailWarning,
     });
     setSubmitting(false);
@@ -99,6 +103,7 @@ export function GiftForm() {
       <ThankYou
         referenceCode={submitted.referenceCode}
         email={submitted.email}
+        scenario={submitted.scenario}
         mailWarning={submitted.mailWarning}
         onReset={handleReset}
       />
@@ -151,13 +156,10 @@ export function GiftForm() {
               required
               error={errors.schenker_geboortedatum}
             >
-              <DateInput
-                autoComplete="bday"
+              <DateOfBirthInput
                 value={form.schenker_geboortedatum}
-                onChange={(e) =>
-                  update("schenker_geboortedatum", e.target.value)
-                }
-                data-error={!!errors.schenker_geboortedatum}
+                onChange={(iso) => update("schenker_geboortedatum", iso)}
+                hasError={!!errors.schenker_geboortedatum}
               />
             </Field>
 
@@ -261,13 +263,15 @@ export function GiftForm() {
           <StepHeader n={2} title="Type gift" />
 
           <div className="grid grid-cols-1 gap-3">
-            <TypeOption
+            <SelectableCard
+              size="lg"
               selected={isPeriodiek}
               title="Periodieke gift"
               description="Min. 5 jaar — aftrekbaar voor de inkomstenbelasting"
               onClick={() => update("type", "periodieke")}
             />
-            <TypeOption
+            <SelectableCard
+              size="lg"
               selected={!isPeriodiek}
               title="Eenmalige gift"
               description="Eenmalige bijdrage"
@@ -276,52 +280,139 @@ export function GiftForm() {
           </div>
 
           {isPeriodiek ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field
+                  label="Bedrag per maand (€)"
+                  required
+                  error={errors.bedrag_per_maand}
+                >
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    value={form.bedrag_per_maand}
+                    onChange={(e) => update("bedrag_per_maand", e.target.value)}
+                    placeholder="25.00"
+                    data-error={!!errors.bedrag_per_maand}
+                  />
+                </Field>
+                <Field
+                  label="Startdatum"
+                  required
+                  error={errors.startdatum}
+                >
+                  <DateInput
+                    value={form.startdatum}
+                    onChange={(e) => update("startdatum", e.target.value)}
+                    data-error={!!errors.startdatum}
+                  />
+                </Field>
+              </div>
+
               <Field
-                label="Bedrag per maand (€)"
+                label="Wilt u ook lid worden van de moskee?"
                 required
-                error={errors.bedrag_per_maand}
+                error={errors.wants_membership}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <SelectableCard
+                    selected={form.wants_membership === "yes"}
+                    title="Ja, ik wil lid worden"
+                    description="U komt onder Leden te staan"
+                    onClick={() => update("wants_membership", "yes")}
+                    hasError={!!errors.wants_membership}
+                  />
+                  <SelectableCard
+                    selected={form.wants_membership === "no"}
+                    title="Nee, alleen periodiek doneren"
+                    description="U blijft alleen schenker"
+                    onClick={() => update("wants_membership", "no")}
+                    hasError={!!errors.wants_membership}
+                  />
+                </div>
+              </Field>
+            </>
+          ) : (
+            <>
+              <Field
+                label="Bedrag (€)"
+                required
+                error={errors.bedrag_eenmalig}
               >
                 <Input
                   type="number"
                   inputMode="decimal"
                   step="0.01"
                   min="0"
-                  value={form.bedrag_per_maand}
-                  onChange={(e) => update("bedrag_per_maand", e.target.value)}
-                  placeholder="25.00"
-                  data-error={!!errors.bedrag_per_maand}
+                  value={form.bedrag_eenmalig}
+                  onChange={(e) => update("bedrag_eenmalig", e.target.value)}
+                  placeholder="100.00"
+                  data-error={!!errors.bedrag_eenmalig}
                 />
               </Field>
+
               <Field
-                label="Startdatum"
+                label="Hoe gaat u betalen?"
                 required
-                error={errors.startdatum}
+                error={errors.payment_method}
               >
-                <DateInput
-                  value={form.startdatum}
-                  onChange={(e) => update("startdatum", e.target.value)}
-                  data-error={!!errors.startdatum}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <SelectableCard
+                    selected={form.payment_method === "bank"}
+                    title="Bankoverschrijving"
+                    description="U maakt het bedrag zelf over"
+                    onClick={() => update("payment_method", "bank")}
+                    hasError={!!errors.payment_method}
+                  />
+                  <SelectableCard
+                    selected={form.payment_method === "cash"}
+                    title="Contant"
+                    description="U geeft het bedrag direct in cash"
+                    onClick={() => update("payment_method", "cash")}
+                    hasError={!!errors.payment_method}
+                  />
+                </div>
               </Field>
-            </div>
-          ) : (
-            <Field
-              label="Bedrag (€)"
-              required
-              error={errors.bedrag_eenmalig}
-            >
-              <Input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                value={form.bedrag_eenmalig}
-                onChange={(e) => update("bedrag_eenmalig", e.target.value)}
-                placeholder="100.00"
-                data-error={!!errors.bedrag_eenmalig}
-              />
-            </Field>
+
+              <Field
+                label="Is het bedrag al voldaan?"
+                required
+                error={errors.payment_status}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <SelectableCard
+                    selected={form.payment_status === "paid"}
+                    title="Ja, voldaan"
+                    description="Telt direct mee als ontvangen"
+                    onClick={() => update("payment_status", "paid")}
+                    hasError={!!errors.payment_status}
+                  />
+                  <SelectableCard
+                    selected={form.payment_status === "unpaid"}
+                    title="Nee, nog niet"
+                    description="Wordt geregistreerd als toezegging"
+                    onClick={() => update("payment_status", "unpaid")}
+                    hasError={!!errors.payment_status}
+                  />
+                </div>
+              </Field>
+
+              {form.payment_status === "paid" && (
+                <Field
+                  label="Wanneer heeft u betaald?"
+                  required
+                  error={errors.payment_date}
+                >
+                  <DateInput
+                    value={form.payment_date}
+                    onChange={(e) => update("payment_date", e.target.value)}
+                    data-error={!!errors.payment_date}
+                  />
+                </Field>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -339,7 +430,7 @@ export function GiftForm() {
             className={cn(
               "flex items-start gap-3 p-4 rounded-md border cursor-pointer transition",
               form.akkoord
-                ? "border-primary bg-primary/5"
+                ? "border-selected bg-selected/15"
                 : "border-input hover:border-primary/50",
               errors.akkoord && "border-destructive"
             )}
@@ -594,30 +685,3 @@ function Field({
   );
 }
 
-function TypeOption({
-  selected,
-  title,
-  description,
-  onClick,
-}: {
-  selected: boolean;
-  title: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "p-4 rounded-lg border-2 text-left transition",
-        selected
-          ? "border-primary bg-primary/5"
-          : "border-border hover:border-primary/50 bg-background"
-      )}
-    >
-      <div className="font-medium text-foreground">{title}</div>
-      <div className="text-xs text-muted-foreground mt-1">{description}</div>
-    </button>
-  );
-}
