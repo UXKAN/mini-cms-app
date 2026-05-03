@@ -125,6 +125,31 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 - **Veiligheid:** Service-role staat alleen in `.env.local` en op Vercel server-env, nooit in client-bundle. Input van `/gift`-formulier wordt door Zod gevalideerd (inclusief `akkoord = true`) vóór er iets wordt geschreven.
 - **Herzieningstrigger:** Wanneer middleware-sprint (R3) wordt afgerond — dan kunnen de inserts ook via authenticated server-client met cookies. Service-role-pad blijft alleen voor specifieke admin-acties die expliciet RLS moeten bypassen.
 
+## 2026-05-03 — Cashgeld-formulier verschuift naar SaaS-fase
+
+- **Beslissing:** Cashgeld-/kwitantie-formulier (mobile-first, vrijwilliger op telefoon) wordt verplaatst van MVP naar SaaS-fase. Voor MVP blijft cash registreren mogelijk via `/donaties` CRUD met `method='cash'`. Geen aparte publieke route, geen eigen mobile-flow. De bestaande `donations.signature_png` en `donations.receipt_photo_url` kolommen blijven staan voor wanneer de feature er wel komt.
+- **Waarom:** Status-check op 2026-05-03 liet zien dat de feature waardevol is (unieke pijler) maar geen blokker voor MVP-fase A — de eigen moskee kan cash ook registreren via de admin-CRUD. Verschuiven verkleint de MVP-scope met ~3-5 dagen werk; focus blijft bij toezeggingen-UI, member detail en gift-modal-pivot.
+- **Vervangt:** decision 2026-04-27 — Cashgeld-formulier IN MVP.
+- **Herzieningstrigger:** Bij voorbereiding SaaS-fase, of als de eigen moskee in MVP signaleert dat handmatige donaties-CRUD niet volstaat voor cash.
+
+## 2026-05-03 — /evenementen verschuift naar SaaS-fase
+
+- **Beslissing:** `/evenementen` (CRUD + interne registraties) wordt verplaatst van MVP naar SaaS-fase. Geen `events`- of `event_registrations`-tabellen in MVP, geen route, geen UI. De lege placeholder-card op het dashboard mag blijven tot de pagina daadwerkelijk gebouwd wordt.
+- **Waarom:** Status-check op 2026-05-03 liet zien dat evenementen geen interactie hebben met de drie hoofdpijlers (leden, donaties, toezeggingen) en geen invloed op dashboard-tellingen. Verschuiven verkleint de MVP-scope zonder de kernfunctionaliteit aan te tasten.
+- **Vervangt:** entry "Evenementen CRUD + interne registraties" in `mvp-scope.md` WEL-lijst.
+- **Herzieningstrigger:** Bij SaaS-fase, of als de eigen moskee in MVP signaleert dat ze evenement-registraties echt willen gebruiken.
+
+## 2026-05-03 — /gift wordt fullscreen modal in dashboard met share-pattern
+
+- **Beslissing:** Het ANBI-donatieformulier krijgt een nieuwe vorm: een **fullscreen modal binnen het dashboard**, geopend via een "Formulier"-knop. Binnen de modal kan de gebruiker het formulier beheren én delen via een **Figma-stijl share-pattern** (openbare link, of toegang beperkt tot organisatie of specifiek e-maildomein). Latere uitbreiding: rechten view/fill/manage.
+  - **MVP-scope:** modal-trigger + bestaand formulier-werk. Standalone route `/gift` blijft voorlopig bestaan voor backward compatibility, maar de modal-flow wordt de hoofdingang.
+  - **SaaS-fase:** share-link genereren, organisatie-/domein-restricties, rechten view/fill/manage. Public-link is dus géén MVP-feature meer.
+- **Waarom:** Status-check op 2026-05-03 leverde een UX-shift op: het formulier wordt een dashboard-feature in plaats van een aparte route. Dat past bij hoe het bestuur het formulier intern wil delen met commissieleden, bestuurders of vrijwilligers zonder volledige dashboard-toegang. Het Figma-share-pattern geeft fijnmazige controle zonder een compleet rollen-/permissies-systeem te bouwen.
+- **Vervangt deels:** decision 2026-04-27 — Standalone publieke formulier-flow vóór dashboard-integratie. Standalone route blijft, maar is niet meer de hoofdflow.
+- **Vervangt deels:** decision 2026-05-02 — /gift tijdelijk achter login. Login-gating blijft relevant voor de standalone route; modal is per definitie ingelogd.
+- **Voorvereiste:** eigen UX-spec voor modal + share-pattern voordat er gebouwd wordt.
+- **Herzieningstrigger:** Bij oplevering UX-spec, of als gebruikersfeedback laat zien dat een standalone publieke link alsnog gewenst is.
+
 ## 2026-05-02 — /gift tijdelijk achter login tegen spam
 
 - **Beslissing:** De publieke route `/gift` staat in MVP achter `useAuth()` — alleen ingelogde users kunnen het formulier zien — om bot-spam tegen te houden zolang er geen rate limiting / captcha is. Dit wijkt af van de oorspronkelijke spec (`2026-04-27-gift-formulier-design.md`) en `mvp-scope.md` ("publieke standalone route /gift"); die spec geldt pas weer als de spam-bescherming staat.

@@ -14,17 +14,19 @@
 - **Donations CRUD** — donaties registreren met bedrag, datum, donateur, doel
 - **Dashboard met echte cijfers** — leden-aantal, donaties van deze maand/jaar, openstaande toezeggingen, recente activiteit. Vervangt de huidige placeholder-cards.
 
-### Drie nieuwe pijlers (vervangen huidige placeholder-pagina's)
+### Twee nieuwe pijlers (vervangen huidige placeholder-pagina's)
 - **Toezeggingen CRUD** — bedrag, donateur, doel, deadline, status (open / betaald / vervallen). Knop "stuur reminder" op detail-page (handmatig).
 - **Ondernemers / sponsors CRUD** — bedrijfsnaam, contactpersoon, sponsorbedrag-historie per jaar, status (actief / inactief).
-- **Evenementen CRUD + interne registraties** — evenement aanmaken, leden eraan koppelen ("wie komt?"), basis-overzicht.
+
+*(Evenementen CRUD + interne registraties verschoven naar SaaS-fase op 2026-05-03 — zie `decisions.md`.)*
 
 ### Financiële I/O
 - **Excel-import** voor leden, donaties, toezeggingen (uitbouwen van bestaande imports-flow)
 - **Excel-export** voor leden, donaties, toezeggingen
 - **ANBI-jaaroverzicht** — exporteer alle donaties van een jaar in ANBI-conform formaat
-- **ANBI-donatieformulier (digitaal)** — **publieke standalone route `/gift`**, eenmalig + periodiek, met handtekening en juridische akkoord-checkbox. Eerste versie: opslag in `gift_agreements` + bevestigingsmail aan gever (Resend). **Mail naar penningmeester en PDF-generatie volgen later** (NEXT). Dashboard-integratie pas na MVP-pijlers.
-- **Cashgeld-formulier / kwitantie** — vrijwilliger vult op telefoon in: bedrag, donateur (optioneel), doel, eventueel foto van papieren kwitantie. Hergebruikt `SignaturePad` uit gift-flow. Record in donations-tabel. *Unieke pijler: geen concurrent heeft dit.*
+- **ANBI-donatieformulier (digitaal)** — **fullscreen modal in dashboard** ("Formulier"-knop), eenmalig + periodiek, met handtekening en juridische akkoord-checkbox. Eerste versie: opslag in `gift_agreements` + bevestigingsmail aan gever (Resend). **Mail naar penningmeester, PDF-generatie en share-pattern (publieke link / organisatie-restricties / rechten) volgen later** (SaaS-fase). Standalone route `/gift` blijft voorlopig bestaan voor backward compatibility.
+
+*(Cashgeld-formulier / kwitantie verschoven naar SaaS-fase op 2026-05-03 — zie `decisions.md`. Cash registreren blijft mogelijk via `/donaties` CRUD met `method='cash'`.)*
 
 ### Operationeel
 - **Member detail page** — bewerken, donatie-historie van die persoon
@@ -45,6 +47,9 @@
 | **Form builder** (eigen formulieren ontwerpen) | Te open scope, kan zelf een product worden | Misschien LATER, na SaaS-sprong |
 | **AI-hulp** (chatbot, auto-rapportage, etc.) | Te open scope, eerst basis solide | LATER, met **smalle** scope |
 | **Stripe / Pay.nl** (online betalingen) | Hoort bij SaaS-sprong, niet bij admin-tool | SaaS-fase |
+| **Cashgeld-formulier** (mobile-first) | Verschoven 2026-05-03; cash via `/donaties` CRUD volstaat voor MVP | SaaS-fase |
+| **Evenementen + registraties** | Verschoven 2026-05-03; geen interactie met kernpijlers | SaaS-fase |
+| **Public-link `/gift`** met share-pattern | Onderdeel gift-modal-feature; permissie-systeem is SaaS-werk | SaaS-fase |
 | **Signup / publieke onboarding** | Eerst eigen moskee, dan publiek | SaaS-fase |
 | **Audit log** (wie deed wat wanneer) | Nice voor SaaS, niet voor één moskee | SaaS-fase |
 | **AVG-export-knoppen voor leden** ("alles over mij") | Niet juridisch verplicht voor één moskee, wel voor SaaS | SaaS-fase |

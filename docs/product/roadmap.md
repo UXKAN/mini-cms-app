@@ -24,14 +24,14 @@ Focus is gewijzigd op 2026-04-27: eerst een werkende publieke formulier-flow, da
 
 In deze volgorde — elk onderdeel krijgt eigen brainstorm → spec → plan → code-cyclus:
 
-1. **Datamodel-spec** voor 3 nieuwe pijlers + relaties (was eerst NOW, nu hier — gift-flow ging voor)
-   → tabellen voor `pledges` (toezeggingen), `sponsors` (ondernemers), `events`, `event_registrations`, `cash_receipts`. Plus relaties (lid ↔ donatie, lid ↔ toezegging, lid ↔ evenement-registratie). Plus `organization_id` op alles.
+1. **Datamodel-spec** voor 2 nieuwe pijlers + relaties (was eerst NOW, nu hier — gift-flow ging voor)
+   → tabellen voor `pledges` (toezeggingen), `sponsors` (ondernemers). Plus relaties (lid ↔ donatie, lid ↔ toezegging). Plus `organization_id` op alles.
+   *(Events-tabellen zijn op 2026-05-03 verschoven naar SaaS-fase; `cash_receipts` vervalt — handtekening + foto blijven kolommen op `donations`.)*
 2. **Toezeggingen CRUD** + status (open/betaald/vervallen) + handmatige reminder-knop — *template van members-page*
 3. **Ondernemers / sponsors CRUD** + sponsorbedrag-historie
-4. **Evenementen CRUD** + interne registraties (welk lid komt)
-5. **Cashgeld-formulier** voor vrijwilliger op telefoon — publieke route, hergebruikt `SignaturePad` component uit gift-flow
-6. **ANBI-formulier uitbreiden** — mail naar penningmeester per inzending + PDF-bijlage (volgt op gift-flow MVP)
-7. **Excel import** uitbouwen naar nieuwe entiteiten
+4. **Gift-modal-pivot** — "Formulier"-knop in dashboard opent fullscreen modal; standalone route blijft. Eerst eigen UX-spec.
+5. **ANBI-formulier uitbreiden** — mail naar penningmeester per inzending + PDF-bijlage (volgt op gift-flow MVP)
+6. **Excel import** uitbouwen naar nieuwe entiteiten
 7. **Excel export** voor leden, donaties, toezeggingen, ANBI-jaaroverzicht
 8. **Member detail page** + donatie-historie per persoon
 9. **Password reset** (Supabase Auth recovery flow)
@@ -51,6 +51,9 @@ In deze volgorde — elk onderdeel krijgt eigen brainstorm → spec → plan →
 - Signup-flow + onboarding *(eerste keer inloggen → moskee-naam, basis-instellingen, eerste import)*
 - Stripe-integratie voor abonnementen
 - Pay.nl-integratie voor iDEAL-donaties
+- **Cashgeld-formulier** (mobile-first, vrijwilliger op telefoon) — verschoven van MVP op 2026-05-03; hergebruikt `SignaturePad` uit gift-flow, schrijft naar `donations` met `method='cash'`
+- **`/evenementen` + interne registraties** — verschoven van MVP op 2026-05-03; tabellen `events` en `event_registrations`, CRUD + leden-koppeling
+- **Gift-modal share-pattern** — publieke link genereren, organisatie-/domein-restricties, rechten view/fill/manage
 - AVG-verwerkersovereenkomst (juridisch, niet code)
 - **Moskee-info dynamisch maken (sweep)** — momenteel hardcoded in `giftAgreementEmail.ts`, `GiftForm.tsx` (overeenkomsttekst), `OrgFooterCard.tsx`. In één pass vervangen door lookups op `organizations`-rij van de inzending. Concrete subtaken:
   - Migratie 005: `organizations` uitbreiden met `legal_name`, `rsin`, `iban`, `contact_email` (allemaal `text`, NOT NULL met sensible defaults voor bestaande rijen)
