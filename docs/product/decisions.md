@@ -112,6 +112,25 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 - **Veiligheid:** Geen secrets/keys in markdown of repo. Alleen variabele-namen + waar ze ingesteld moeten staan. Bij destructieve acties (DNS, env var rm, redeploy) eerst korte uitleg + bevestiging vragen voordat Claude uitvoert.
 - **Herzieningstrigger:** Als Claude te autonoom wijzigingen doorvoert die niet gewenst zijn, of juist te terughoudend is ondanks beschikbare CLI-toegang. Beide kunnen leiden tot scherpere afspraken.
 
+## 2026-05-03 — Datamodel v2 + service-role voor gift-formulier-transacties
+
+- **Beslissing:** Datamodel uitgebreid voor formulier-naar-dashboard-flow zonder dubbele telling. Spec: `docs/superpowers/specs/2026-05-02-datamodel-design.md` v2. Concreet:
+  - Nieuwe tabel `pledges` (mondelinge toezeggingen, alleen schema in deze ronde, UI later).
+  - `donations` krijgt matching-kolommen (`pledge_id`, `gift_agreement_id`, `signature_png`, `receipt_photo_url`, `source`, `external_ref`) + partial unique index voor MT940/Stripe-dedup.
+  - `gift_agreements` krijgt `payment_method_intent` / `payment_status` / `paid_at` (eenmalige), `wants_membership` (periodieke), `agreement_status` (overeenkomst-cyclus, los van betaalstatus), `member_id` (FK naar members).
+  - `members.user_id` en `donations.user_id` gemaakt nullable — anon-flow vanuit `/gift` heeft geen verantwoordelijke user.
+  - Bedrag-in-letters bewust **weggelaten**: cijfer + bevestigingsmail volstaat juridisch voor MVP.
+  - **`SUPABASE_SERVICE_ROLE_KEY` toegevoegd** — gebruikt in `src/app/gift/actions.ts` voor de transactie-inserts (gift_agreement + optioneel donation + optioneel member). Bypassed RLS, alleen server-side.
+- **Waarom:** Zonder deze structuur zou het dashboard ofwel onmogelijk te tellen zijn, ofwel bedragen dubbel tellen (lid + periodieke gift). Service-role gekozen boven `@supabase/ssr` vroeg-trekken: snelste pad naar werkende flow, refactor naar cookie-aware client kan later in R3 (middleware-sprint).
+- **Veiligheid:** Service-role staat alleen in `.env.local` en op Vercel server-env, nooit in client-bundle. Input van `/gift`-formulier wordt door Zod gevalideerd (inclusief `akkoord = true`) vóór er iets wordt geschreven.
+- **Herzieningstrigger:** Wanneer middleware-sprint (R3) wordt afgerond — dan kunnen de inserts ook via authenticated server-client met cookies. Service-role-pad blijft alleen voor specifieke admin-acties die expliciet RLS moeten bypassen.
+
+## 2026-05-02 — /gift tijdelijk achter login tegen spam
+
+- **Beslissing:** De publieke route `/gift` staat in MVP achter `useAuth()` — alleen ingelogde users kunnen het formulier zien — om bot-spam tegen te houden zolang er geen rate limiting / captcha is. Dit wijkt af van de oorspronkelijke spec (`2026-04-27-gift-formulier-design.md`) en `mvp-scope.md` ("publieke standalone route /gift"); die spec geldt pas weer als de spam-bescherming staat.
+- **Waarom:** Zonder rate limiting kan een bot oneindig rijen inserten via de anon-INSERT-policy op `gift_agreements`. Login-gating is een goedkope tijdelijke spam-shield tot R5 (rate limiting / captcha op /gift) is ingebouwd. Voor MVP-fase A (één moskee, intern bestuur logt in) heeft niemand een account-bezwaar; het formulier wordt nu alleen door bestuursleden gebruikt om mee te oefenen.
+- **Herzieningstrigger:** Zodra rate limiting + (optioneel) captcha op /gift staat — dan kan `useAuth` weg en wordt /gift weer publiek per spec. Ook als een echte schenker zonder account het moet kunnen invullen vóór de spam-bescherming klaar is.
+
 ## 2026-04-27 — Niet-doelen vastgelegd
 
 - **Beslissing:** Volgende categorieën zijn definitief geen doel: boekhouding, publieke website/CMS, publieke event-ticketing, gebedstijden/Quran-features, e-mail-marketing, multi-vestiging-per-account, native mobiele app voor leden.
