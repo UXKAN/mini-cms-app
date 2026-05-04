@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
@@ -54,31 +55,115 @@ function StatusBadge({ status }: { status: MemberStatus }) {
   );
 }
 
+function MembershipTypeBadge({ type }: { type: string | null }) {
+  if (!type) return <span className="text-muted-foreground text-sm">—</span>;
+  if (type === "lid")
+    return (
+      <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100">
+        Lid
+      </Badge>
+    );
+  if (type === "donateur")
+    return (
+      <Badge className="bg-sky-100 text-sky-900 hover:bg-sky-100">
+        Donateur
+      </Badge>
+    );
+  return <Badge variant="secondary">{type}</Badge>;
+}
+
+type TypeFilter = "all" | "lid" | "donateur" | "other";
+
 function MembersInner() {
   const { user } = useAuth();
   const org = useOrg();
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [agreementAmounts, setAgreementAmounts] = useState<Map<string, number>>(
+    new Map()
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>("closed");
   const [editing, setEditing] = useState<Member | null>(null);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("members")
-      .select("*")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: false });
-    if (error) setError(error.message);
-    else setMembers((data ?? []) as Member[]);
+    const [memRes, giftRes] = await Promise.all([
+      supabase
+        .from("members")
+        .select("*")
+        .eq("org_id", org.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("gift_agreements")
+        .select("member_id, bedrag_per_maand, agreement_status")
+        .eq("organization_id", org.id)
+        .eq("type", "periodieke")
+        .eq("agreement_status", "signed")
+        .not("member_id", "is", null),
+    ]);
+    if (memRes.error) {
+      setError(memRes.error.message);
+      setLoading(false);
+      return;
+    }
+    setMembers((memRes.data ?? []) as Member[]);
+
+    // Aggregeer bedrag_per_maand per member (bv. iemand met 2 actieve akten)
+    const map = new Map<string, number>();
+    (giftRes.data ?? []).forEach((g) => {
+      if (!g.member_id) return;
+      const cur = map.get(g.member_id) ?? 0;
+      map.set(g.member_id, cur + Number(g.bedrag_per_maand ?? 0));
+    });
+    setAgreementAmounts(map);
+
     setLoading(false);
   }, [org.id]);
 
   useEffect(() => {
     if (user) fetchMembers();
   }, [user, fetchMembers]);
+
+  const monthlyAmountFor = useCallback(
+    (m: Member): { value: number; viaAkte: boolean } | null => {
+      const fromAkte = agreementAmounts.get(m.id);
+      if (fromAkte && fromAkte > 0) return { value: fromAkte, viaAkte: true };
+      if (m.monthly_amount != null && m.monthly_amount > 0)
+        return { value: Number(m.monthly_amount), viaAkte: false };
+      return null;
+    },
+    [agreementAmounts]
+  );
+
+  const filteredMembers = useMemo(() => {
+    if (typeFilter === "all") return members;
+    if (typeFilter === "other")
+      return members.filter(
+        (m) =>
+          m.membership_type !== "lid" &&
+          m.membership_type !== "donateur" &&
+          m.membership_type
+      );
+    return members.filter((m) => m.membership_type === typeFilter);
+  }, [members, typeFilter]);
+
+  const counts = useMemo(() => {
+    const all = members.length;
+    const lid = members.filter((m) => m.membership_type === "lid").length;
+    const donateur = members.filter(
+      (m) => m.membership_type === "donateur"
+    ).length;
+    const other = members.filter(
+      (m) =>
+        m.membership_type &&
+        m.membership_type !== "lid" &&
+        m.membership_type !== "donateur"
+    ).length;
+    return { all, lid, donateur, other };
+  }, [members]);
 
   const openAdd = () => { setEditing(null); setModalMode("add"); };
   const openEdit = (m: Member) => { setEditing(m); setModalMode("edit"); };
@@ -98,7 +183,7 @@ function MembersInner() {
         <div>
           <h1 className="font-serif text-4xl font-normal text-foreground">Leden</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Beheer je leden en contactpersonen.
+            Leden en donateurs van de moskee.
           </p>
         </div>
         {members.length > 0 && (
@@ -141,61 +226,124 @@ function MembersInner() {
           </div>
         </div>
       ) : (
-        <div
-          className="rounded-[10px] border border-border overflow-hidden"
-          style={{ background: "var(--surface)" }}
-        >
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Naam</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Telefoon</TableHead>
-                <TableHead>Woonplaats</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Bedrag</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="font-medium">{displayName(m)}</TableCell>
-                  <TableCell>{m.email ?? "—"}</TableCell>
-                  <TableCell>{m.phone ?? "—"}</TableCell>
-                  <TableCell>{m.city ?? "—"}</TableCell>
-                  <TableCell>{m.membership_type ?? "—"}</TableCell>
-                  <TableCell>
-                    {m.monthly_amount != null
-                      ? `€ ${m.monthly_amount.toFixed(2)}`
-                      : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={m.status} />
-                  </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEdit(m)}
-                    >
-                      Bewerken
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(m.id)}
-                    >
-                      Verwijderen
-                    </Button>
-                  </TableCell>
+        <>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <Button
+              variant={typeFilter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTypeFilter("all")}
+            >
+              Alle ({counts.all})
+            </Button>
+            <Button
+              variant={typeFilter === "lid" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTypeFilter("lid")}
+            >
+              Lid ({counts.lid})
+            </Button>
+            <Button
+              variant={typeFilter === "donateur" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTypeFilter("donateur")}
+            >
+              Donateur ({counts.donateur})
+            </Button>
+            {counts.other > 0 && (
+              <Button
+                variant={typeFilter === "other" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setTypeFilter("other")}
+              >
+                Overig ({counts.other})
+              </Button>
+            )}
+          </div>
+
+          <div
+            className="rounded-[10px] border border-border overflow-hidden"
+            style={{ background: "var(--surface)" }}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Naam</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Telefoon</TableHead>
+                  <TableHead>Woonplaats</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Bedrag/maand</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredMembers.map((m) => {
+                  const amt = monthlyAmountFor(m);
+                  return (
+                    <TableRow key={m.id}>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/members/${m.id}`}
+                          className="hover:underline"
+                        >
+                          {displayName(m)}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{m.email ?? "—"}</TableCell>
+                      <TableCell>{m.phone ?? "—"}</TableCell>
+                      <TableCell>{m.city ?? "—"}</TableCell>
+                      <TableCell>
+                        <MembershipTypeBadge type={m.membership_type} />
+                      </TableCell>
+                      <TableCell>
+                        {amt ? (
+                          <span>
+                            € {amt.value.toFixed(2)}
+                            {amt.viaAkte && (
+                              <span className="text-xs text-muted-foreground ml-1">
+                                (akte)
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={m.status} />
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEdit(m)}
+                        >
+                          Bewerken
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(m.id)}
+                        >
+                          Verwijderen
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredMembers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      Geen leden in deze filter.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Add / Edit dialog */}

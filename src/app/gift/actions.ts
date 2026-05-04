@@ -145,15 +145,18 @@ export async function submitGiftAgreement(
     }
   }
 
-  // 3. Periodieke + lid -> member (hergebruik of nieuw) + update gift_agreement.member_id
-  if (wantsMember) {
+  // 3. Periodieke -> altijd member (hergebruik of nieuw) + update gift_agreement.member_id
+  //    membership_type onderscheidt: 'lid' (wants_membership=true) of 'donateur' (false).
+  //    Beslissing: docs/product/decisions.md → 2026-05-04 — Donateurs ook als members-rij.
+  if (data.type === "periodieke") {
     const { first, last } = splitName(data.schenker_naam);
+    const membershipType = wantsMember ? "lid" : "donateur";
 
     // Eerst kijken of er al een actieve member is met dit e-mailadres in dezelfde org;
     // voorkomt dubbele rijen bij dubbel-insturen of bestaand lid dat opnieuw tekent.
     const { data: existingMember, error: lookupError } = await supabase
       .from("members")
-      .select("id")
+      .select("id, membership_type")
       .eq("org_id", organizationId)
       .ilike("email", data.schenker_email)
       .neq("status", "cancelled")
@@ -169,6 +172,25 @@ export async function submitGiftAgreement(
       );
     } else if (existingMember) {
       memberId = existingMember.id;
+      // Promotie 'donateur' -> 'lid' is OK; downgrade 'lid' -> 'donateur' niet.
+      // Lege/null membership_type wordt aangevuld.
+      if (
+        membershipType === "lid" &&
+        existingMember.membership_type !== "lid"
+      ) {
+        await supabase
+          .from("members")
+          .update({ membership_type: "lid" })
+          .eq("id", memberId);
+      } else if (
+        !existingMember.membership_type &&
+        membershipType === "donateur"
+      ) {
+        await supabase
+          .from("members")
+          .update({ membership_type: "donateur" })
+          .eq("id", memberId);
+      }
     } else {
       const { data: insertedMember, error: memberError } = await supabase
         .from("members")
@@ -184,6 +206,7 @@ export async function submitGiftAgreement(
           city: data.schenker_woonplaats,
           iban: data.iban,
           status: "active",
+          membership_type: membershipType,
           monthly_amount: null, // bedrag staat al in gift_agreement
           notes: `Aangemaakt via ANBI-formulier #${referenceCode}`,
         })

@@ -125,6 +125,21 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 - **Veiligheid:** Service-role staat alleen in `.env.local` en op Vercel server-env, nooit in client-bundle. Input van `/gift`-formulier wordt door Zod gevalideerd (inclusief `akkoord = true`) vóór er iets wordt geschreven.
 - **Herzieningstrigger:** Wanneer middleware-sprint (R3) wordt afgerond — dan kunnen de inserts ook via authenticated server-client met cookies. Service-role-pad blijft alleen voor specifieke admin-acties die expliciet RLS moeten bypassen.
 
+## 2026-05-04 — Donateurs ook als members-rij (filosofie 1)
+
+- **Beslissing:** Iedereen die regelmatig geld stort krijgt een rij in `members`, ongeacht of de schenker bij het invullen van /gift `wants_membership=true` of `false` heeft aangevinkt. Onderscheid via `members.membership_type`:
+  - `'lid'` — wants_membership=true bij periodieke akte, of handmatig toegevoegd lid
+  - `'donateur'` — wants_membership=false bij periodieke akte (alleen-doneren)
+  - Andere waarden (`'erelid'`, `'vrijwilliger'`, …) — handmatig configureerbaar
+  Op de `/leden`-pagina blijven beide types in dezelfde tabel staan, met badge + filter-bar (Alle / Lid / Donateur). De pagina behoudt de naam "Leden" — subtitel maakt duidelijk dat donateurs er ook in zitten.
+- **Waarom:** Een periodieke schenker zonder lidmaatschap (Erik in productie, €20/maand) is anders volledig onzichtbaar in de UI. Een bestuur ziet 'm dan niet als trouwe vriend van de moskee. Aparte tabel of route voor "donateurs" zou kunstmatige scheiding zijn — bestuur denkt niet "lid" vs "donateur" als verschillende mensen, maar als verschillende statussen van dezelfde mens. Het bestaande `members.membership_type`-veld is `text nullable` en kan deze waarden zonder migratie aannemen.
+- **Implicaties:**
+  - `gift/actions.ts` maakt bij periodieke akte **altijd** een member-rij (of hergebruikt bestaande via duplicate-email check). `membership_type='lid'` als wants_membership=true, anders `'donateur'`.
+  - **Retroactieve data-fix nodig** voor bestaande periodieke akten zonder member-koppeling (Erik + Ali Ozkan #2 in productie). Eenmalig script.
+  - `/leden`-tabel krijgt kolom "Type" (badge), filter-bar, en kolom "Bedrag/maand" die voor donateurs én periodieke leden uit `gift_agreements.bedrag_per_maand` leest.
+  - `members.monthly_amount` blijft `NULL` voor wie via `gift_agreements` een bedrag heeft (geen dubbele telling).
+- **Herzieningstrigger:** Als blijkt dat het bestuur juridisch onderscheid wel echt apart wil zien (bv. ALV-stemrecht), kan een aparte route alsnog. Het datamodel ondersteunt het al.
+
 ## 2026-05-04 — Goud als donatievorm verschuift naar SaaS-fase
 
 - **Beslissing:** Goud (gewichtsbedrag in gram) als alternatieve donatievorm naast cash/bank/online wordt **niet** in MVP gebouwd. Verplaatst naar SaaS-sprong-lijst. Geen `method='gold'` CHECK-uitbreiding, geen `amount_grams`-kolom, geen UI-keuze.

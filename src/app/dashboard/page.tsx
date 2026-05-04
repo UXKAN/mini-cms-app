@@ -68,6 +68,15 @@ export default function DashboardPage() {
   const [toezeggingenCount, setToezeggingenCount] = useState<number | null>(null);
   const [toezeggingenTotal, setToezeggingenTotal] = useState<number | null>(null);
 
+  // Periodieke giften state
+  const [periodiekeCount, setPeriodiekeCount] = useState<number | null>(null);
+  const [periodiekeTotal, setPeriodiekeTotal] = useState<number | null>(null);
+  const [unpaidThisMonthCount, setUnpaidThisMonthCount] = useState<number | null>(null);
+  const [unpaidThisMonthTotal, setUnpaidThisMonthTotal] = useState<number | null>(null);
+
+  // Niet-gematcht state
+  const [unmatchedCount, setUnmatchedCount] = useState<number | null>(null);
+
   // Loading
   const [loading, setLoading] = useState(true);
 
@@ -97,9 +106,12 @@ export default function DashboardPage() {
       { data: prevDons },
       { data: yearDons },
       { count: memCount },
-      { data: members },
+      { data: allMembers },
       { data: openPledges },
       { data: unpaidAgreements },
+      { data: periodiekeAkten },
+      { data: monthDonsLinked },
+      { count: unmatched },
     ] = await Promise.all([
       supabase.from("donations").select("amount, donated_at")
         .gte("donated_at", monthStart).lte("donated_at", monthEnd),
@@ -107,12 +119,19 @@ export default function DashboardPage() {
         .gte("donated_at", prevStart).lte("donated_at", prevEnd),
       supabase.from("donations").select("amount")
         .gte("donated_at", yearStart),
-      supabase.from("members").select("*", { count: "exact", head: true }),
-      supabase.from("members").select("id, name, first_name, last_name, monthly_amount, membership_type")
-        .not("monthly_amount", "is", null).order("monthly_amount", { ascending: false }).limit(5),
+      supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
+      supabase.from("members").select("id, name, first_name, last_name, monthly_amount, membership_type, status")
+        .eq("status", "active"),
       supabase.from("pledges").select("amount").in("status", ["open", "partial"]),
       supabase.from("gift_agreements").select("bedrag_eenmalig")
         .eq("type", "eenmalige").in("payment_status", ["unpaid", "partial"]),
+      supabase.from("gift_agreements").select("id, member_id, bedrag_per_maand")
+        .eq("type", "periodieke").eq("agreement_status", "signed"),
+      supabase.from("donations").select("gift_agreement_id")
+        .gte("donated_at", monthStart).lte("donated_at", monthEnd)
+        .not("gift_agreement_id", "is", null),
+      supabase.from("donations").select("*", { count: "exact", head: true })
+        .is("pledge_id", null).is("gift_agreement_id", null).is("member_id", null),
     ]);
 
     // Chart: group by day
@@ -138,15 +157,43 @@ export default function DashboardPage() {
     setYearTotal(yTotal);
 
     setMemberCount(memCount ?? 0);
-    const recurring = (members ?? []).reduce((s, m) => s + Number(m.monthly_amount ?? 0), 0);
+
+    // Aggregeer akte-bedragen per member (kan meerdere akten per persoon zijn)
+    const akteBedragPerMember = new Map<string, number>();
+    (periodiekeAkten ?? []).forEach((a) => {
+      if (!a.member_id) return;
+      const cur = akteBedragPerMember.get(a.member_id) ?? 0;
+      akteBedragPerMember.set(a.member_id, cur + Number(a.bedrag_per_maand ?? 0));
+    });
+
+    // Recurring per member: max(akte-bedrag, monthly_amount). Voorkomt dubbele telling.
+    const memberAmounts = new Map<string, number>();
+    (allMembers ?? []).forEach((m) => {
+      const fromAkte = akteBedragPerMember.get(m.id) ?? 0;
+      const fromMember = Number(m.monthly_amount ?? 0);
+      memberAmounts.set(m.id, fromAkte > 0 ? fromAkte : fromMember);
+    });
+
+    const recurring = Array.from(memberAmounts.values()).reduce(
+      (s, v) => s + v,
+      0
+    );
     setMonthlyRecurring(recurring);
 
-    const donors: TopDonor[] = (members ?? []).map((m) => ({
-      id: m.id,
-      name: [m.first_name, m.last_name].filter(Boolean).join(" ").trim() || m.name || "—",
-      type: m.membership_type ?? "Lid",
-      amount: Number(m.monthly_amount ?? 0),
-    }));
+    // Top 5: members met hoogste recurring bedrag (uit beide bronnen)
+    const donors: TopDonor[] = (allMembers ?? [])
+      .map((m) => ({
+        id: m.id,
+        name:
+          [m.first_name, m.last_name].filter(Boolean).join(" ").trim() ||
+          m.name ||
+          "—",
+        type: m.membership_type ?? "Lid",
+        amount: memberAmounts.get(m.id) ?? 0,
+      }))
+      .filter((d) => d.amount > 0)
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
     setTopDonors(donors);
 
     const pledgeTotal = (openPledges ?? []).reduce(
@@ -161,6 +208,35 @@ export default function DashboardPage() {
       (openPledges?.length ?? 0) + (unpaidAgreements?.length ?? 0)
     );
     setToezeggingenTotal(pledgeTotal + agreementTotal);
+
+    // Periodieke verwacht/maand: som van actieve periodieke akten
+    const periodiekeCnt = periodiekeAkten?.length ?? 0;
+    const periodiekeTot = (periodiekeAkten ?? []).reduce(
+      (s, a) => s + Number(a.bedrag_per_maand ?? 0),
+      0
+    );
+    setPeriodiekeCount(periodiekeCnt);
+    setPeriodiekeTotal(periodiekeTot);
+
+    // Niet-betaald deze maand: periodieke akten zonder donation in lopende maand
+    const paidIds = new Set(
+      (monthDonsLinked ?? [])
+        .map((d) => d.gift_agreement_id)
+        .filter((x): x is string => Boolean(x))
+    );
+    const unpaidThisMonth = (periodiekeAkten ?? []).filter(
+      (a) => !paidIds.has(a.id)
+    );
+    setUnpaidThisMonthCount(unpaidThisMonth.length);
+    setUnpaidThisMonthTotal(
+      unpaidThisMonth.reduce(
+        (s, a) => s + Number(a.bedrag_per_maand ?? 0),
+        0
+      )
+    );
+
+    // Niet-gematcht donaties (geen pledge, gift_agreement of member gekoppeld)
+    setUnmatchedCount(unmatched ?? 0);
 
     setLoading(false);
   }
@@ -308,13 +384,58 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* ── Row 1b: Operational stat-cards (periodieke + matching) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
+        <Card>
+          <CardContent className="p-5">
+            <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
+              Periodiek verwacht / maand
+            </div>
+            <div className="font-serif text-[28px] leading-none" style={{ color: "var(--ink)" }}>
+              {loading ? "…" : formatEuro(periodiekeTotal ?? 0)}
+            </div>
+            <p className="text-[12px] mt-1" style={{ color: "var(--ink-muted)" }}>
+              {periodiekeCount ?? 0} actieve {periodiekeCount === 1 ? "akte" : "akten"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
+              Niet betaald deze maand
+            </div>
+            <div className="font-serif text-[28px] leading-none" style={{ color: "var(--ink)" }}>
+              {loading ? "…" : formatEuro(unpaidThisMonthTotal ?? 0)}
+            </div>
+            <p className="text-[12px] mt-1" style={{ color: "var(--ink-muted)" }}>
+              {unpaidThisMonthCount ?? 0} {(unpaidThisMonthCount ?? 0) === 1 ? "akte zonder" : "akten zonder"} ontvangen donatie
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
+              Niet gematcht
+            </div>
+            <div className="font-serif text-[28px] leading-none" style={{ color: "var(--ink)" }}>
+              {loading ? "…" : (unmatchedCount ?? 0)}
+            </div>
+            <p className="text-[12px] mt-1" style={{ color: "var(--ink-muted)" }}>
+              {(unmatchedCount ?? 0) === 1 ? "donatie zonder" : "donaties zonder"} koppeling
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* ── Row 2: Leden + Ondernemers ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         {/* Maandelijkse Leden */}
         <Card>
           <CardContent className="p-7">
             <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Maandelijkse leden
+              Leden &amp; donateurs
             </div>
             <div className="flex gap-10 mb-6">
               <div>
@@ -351,9 +472,9 @@ export default function DashboardPage() {
                         {i + 1}
                       </span>
                       <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>{d.name}</span>
-                      {d.type && d.type !== "Lid" && (
+                      {d.type && (
                         <span
-                          className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                          className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize"
                           style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}
                         >
                           {d.type}
