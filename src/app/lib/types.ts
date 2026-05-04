@@ -168,5 +168,6 @@ export type GiftAgreement = {
   ondertekening_handtekening_png: string;
 
   agreement_status: GiftAgreementStatus;
+  purpose: string | null;
   created_at: string;
 };

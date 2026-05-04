@@ -15,8 +15,9 @@
 - **Dashboard met echte cijfers** — leden-aantal, donaties van deze maand/jaar, openstaande toezeggingen, recente activiteit. Vervangt de huidige placeholder-cards.
 
 ### Twee nieuwe pijlers (vervangen huidige placeholder-pagina's)
-- **Toezeggingen CRUD** — bedrag, donateur, doel, deadline, status (open / betaald / vervallen). Knop "stuur reminder" op detail-page (handmatig).
+- **Toezeggingen CRUD** — bedrag, donateur, omschrijving, deadline, status (open / partial / paid / cancelled). Knop "stuur reminder" op detail-page (handmatig). Toont **gemengde lijst** van `pledges` (mondeling/email/event) én onbetaalde `gift_agreements` (eenmalige ANBI-akten waarvoor het geld nog niet binnen is) — type-badge maakt onderscheid. Matching naar `donations` via "→ Markeer als betaald".
 - **Ondernemers / sponsors CRUD** — bedrijfsnaam, contactpersoon, sponsorbedrag-historie per jaar, status (actief / inactief).
+- **Omschrijving-veld overal** — in `/donaties`, `/toezeggingen` en `/gift` (eenmalige) dezelfde label "Omschrijving". Bij /gift eenmalige + voldaan: omschrijving landt in zowel `gift_agreements.purpose` als `donations.notes`.
 
 *(Evenementen CRUD + interne registraties verschoven naar SaaS-fase op 2026-05-03 — zie `decisions.md`.)*
 
@@ -47,6 +48,7 @@
 | **Form builder** (eigen formulieren ontwerpen) | Te open scope, kan zelf een product worden | Misschien LATER, na SaaS-sprong |
 | **AI-hulp** (chatbot, auto-rapportage, etc.) | Te open scope, eerst basis solide | LATER, met **smalle** scope |
 | **Stripe / Pay.nl** (online betalingen) | Hoort bij SaaS-sprong, niet bij admin-tool | SaaS-fase |
+| **Goud als donatievorm** (gram + EUR-equivalent) | Verschoven 2026-05-04; vereist gram-kolom + ANBI-koers + jaaroverzicht-aanpassing. Workaround: `method='other'` + omschrijving | SaaS-fase |
 | **Cashgeld-formulier** (mobile-first) | Verschoven 2026-05-03; cash via `/donaties` CRUD volstaat voor MVP | SaaS-fase |
 | **Evenementen + registraties** | Verschoven 2026-05-03; geen interactie met kernpijlers | SaaS-fase |
 | **Public-link `/gift`** met share-pattern | Onderdeel gift-modal-feature; permissie-systeem is SaaS-werk | SaaS-fase |

@@ -27,7 +27,7 @@ In deze volgorde — elk onderdeel krijgt eigen brainstorm → spec → plan →
 1. **Datamodel-spec** voor 2 nieuwe pijlers + relaties (was eerst NOW, nu hier — gift-flow ging voor)
    → tabellen voor `pledges` (toezeggingen), `sponsors` (ondernemers). Plus relaties (lid ↔ donatie, lid ↔ toezegging). Plus `organization_id` op alles.
    *(Events-tabellen zijn op 2026-05-03 verschoven naar SaaS-fase; `cash_receipts` vervalt — handtekening + foto blijven kolommen op `donations`.)*
-2. **Toezeggingen CRUD** + status (open/betaald/vervallen) + handmatige reminder-knop — *template van members-page*
+2. **Toezeggingen CRUD** + status (open/partial/paid/cancelled) + handmatige reminder-knop — *template van members-page*. Gemengde lijst: pledges + onbetaalde gift_agreements. Matching-actie ("Markeer als betaald") creëert donation. Omschrijving-veld zichtbaar.
 3. **Ondernemers / sponsors CRUD** + sponsorbedrag-historie
 4. **Gift-modal-pivot** — "Formulier"-knop in dashboard opent fullscreen modal; standalone route blijft. Eerst eigen UX-spec.
 5. **ANBI-formulier uitbreiden** — mail naar penningmeester per inzending + PDF-bijlage (volgt op gift-flow MVP)
@@ -51,6 +51,7 @@ In deze volgorde — elk onderdeel krijgt eigen brainstorm → spec → plan →
 - Signup-flow + onboarding *(eerste keer inloggen → moskee-naam, basis-instellingen, eerste import)*
 - Stripe-integratie voor abonnementen
 - Pay.nl-integratie voor iDEAL-donaties
+- **Goud als donatievorm** — verschoven van MVP-discussie op 2026-05-04; nieuwe `method='gold'` waarde, `donations.amount_grams numeric` kolom, gram-input in /gift én /donaties CRUD, EUR-koers-keuze voor ANBI-jaaroverzicht
 - **Cashgeld-formulier** (mobile-first, vrijwilliger op telefoon) — verschoven van MVP op 2026-05-03; hergebruikt `SignaturePad` uit gift-flow, schrijft naar `donations` met `method='cash'`
 - **`/evenementen` + interne registraties** — verschoven van MVP op 2026-05-03; tabellen `events` en `event_registrations`, CRUD + leden-koppeling
 - **Gift-modal share-pattern** — publieke link genereren, organisatie-/domein-restricties, rechten view/fill/manage

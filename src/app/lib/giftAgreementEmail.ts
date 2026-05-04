@@ -79,6 +79,11 @@ export function buildConfirmationEmail(
       row("Startdatum", fmtDatum(data.startdatum!))
     : row("Bedrag", fmtBedrag(data.bedrag_eenmalig!));
 
+  const purposeRegel =
+    !isPeriodiek && data.purpose
+      ? row("Omschrijving", escapeHtml(data.purpose))
+      : "";
+
   const html = `<!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -133,6 +138,7 @@ export function buildConfirmationEmail(
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 ${row("Type gift", isPeriodiek ? "Periodieke gift (min. 5 jaar)" : "Eenmalige gift")}
                 ${bedragRegel}
+                ${purposeRegel}
                 ${row("Naam", escapeHtml(data.schenker_naam))}
                 ${row("Adres", escapeHtml(data.schenker_adres))}
                 ${row("Postcode", escapeHtml(data.schenker_postcode))}
@@ -203,6 +209,7 @@ export function buildConfirmationEmail(
     isPeriodiek
       ? `Bedrag per maand: ${fmtBedrag(data.bedrag_per_maand!)}\nStartdatum: ${fmtDatum(data.startdatum!)}`
       : `Bedrag: ${fmtBedrag(data.bedrag_eenmalig!)}`,
+    !isPeriodiek && data.purpose ? `Omschrijving: ${data.purpose}` : null,
     `Naam: ${data.schenker_naam}`,
     `Adres: ${data.schenker_adres}`,
     `Postcode: ${data.schenker_postcode}`,
@@ -225,7 +232,9 @@ export function buildConfirmationEmail(
     `HDV Selimiye / HDV Anadolu`,
     `RSIN: 805141200`,
     `IBAN: NL33 ABNA 0550 1441 96`,
-  ].join("\n");
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 
   return { subject, html, text };
 }

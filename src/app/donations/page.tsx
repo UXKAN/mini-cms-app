@@ -150,7 +150,7 @@ function DonationsInner() {
                 <TableHead>Bedrag</TableHead>
                 <TableHead>Methode</TableHead>
                 <TableHead>Lid</TableHead>
-                <TableHead>Notities</TableHead>
+                <TableHead>Omschrijving</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -327,9 +327,9 @@ function DonationForm({
           </select>
         </div>
         <div className="flex flex-col gap-1.5 col-span-2">
-          <Label className="text-xs text-muted-foreground">Notities</Label>
+          <Label className="text-xs text-muted-foreground">Omschrijving</Label>
           <Input
-            placeholder="Omschrijving, doel, etc."
+            placeholder="Bijvoorbeeld: Ramadan-fonds, gevel-renovatie, vrije bestemming"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="h-10 text-sm"

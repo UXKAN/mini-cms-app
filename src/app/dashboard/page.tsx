@@ -64,6 +64,10 @@ export default function DashboardPage() {
   const [monthlyRecurring, setMonthlyRecurring] = useState<number | null>(null);
   const [topDonors, setTopDonors] = useState<TopDonor[]>([]);
 
+  // Toezeggingen state
+  const [toezeggingenCount, setToezeggingenCount] = useState<number | null>(null);
+  const [toezeggingenTotal, setToezeggingenTotal] = useState<number | null>(null);
+
   // Loading
   const [loading, setLoading] = useState(true);
 
@@ -94,6 +98,8 @@ export default function DashboardPage() {
       { data: yearDons },
       { count: memCount },
       { data: members },
+      { data: openPledges },
+      { data: unpaidAgreements },
     ] = await Promise.all([
       supabase.from("donations").select("amount, donated_at")
         .gte("donated_at", monthStart).lte("donated_at", monthEnd),
@@ -104,6 +110,9 @@ export default function DashboardPage() {
       supabase.from("members").select("*", { count: "exact", head: true }),
       supabase.from("members").select("id, name, first_name, last_name, monthly_amount, membership_type")
         .not("monthly_amount", "is", null).order("monthly_amount", { ascending: false }).limit(5),
+      supabase.from("pledges").select("amount").in("status", ["open", "partial"]),
+      supabase.from("gift_agreements").select("bedrag_eenmalig")
+        .eq("type", "eenmalige").in("payment_status", ["unpaid", "partial"]),
     ]);
 
     // Chart: group by day
@@ -139,6 +148,19 @@ export default function DashboardPage() {
       amount: Number(m.monthly_amount ?? 0),
     }));
     setTopDonors(donors);
+
+    const pledgeTotal = (openPledges ?? []).reduce(
+      (s, p) => s + Number(p.amount ?? 0),
+      0
+    );
+    const agreementTotal = (unpaidAgreements ?? []).reduce(
+      (s, a) => s + Number(a.bedrag_eenmalig ?? 0),
+      0
+    );
+    setToezeggingenCount(
+      (openPledges?.length ?? 0) + (unpaidAgreements?.length ?? 0)
+    );
+    setToezeggingenTotal(pledgeTotal + agreementTotal);
 
     setLoading(false);
   }
@@ -400,18 +422,46 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="p-7">
             <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Toezeggingen
+              Openstaande toezeggingen
             </div>
-            <div className="py-8 text-center">
-              <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>Toezeggingen module komt binnenkort.</p>
-              <Link
-                href="/toezeggingen"
-                className="inline-block mt-3 text-sm font-medium"
-                style={{ color: "var(--accent-dark)" }}
-              >
-                Bekijk toezeggingen →
-              </Link>
-            </div>
+            {toezeggingenCount === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>
+                  Geen openstaande toezeggingen.
+                </p>
+                <Link
+                  href="/toezeggingen"
+                  className="inline-block mt-3 text-sm font-medium"
+                  style={{ color: "var(--accent-dark)" }}
+                >
+                  Nieuwe toezegging registreren →
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-10 mb-5">
+                  <div>
+                    <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
+                      {loading ? "…" : (toezeggingenCount ?? 0)}
+                    </div>
+                    <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>stuks open</div>
+                  </div>
+                  <div>
+                    <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
+                      {loading ? "…" : formatEuro(toezeggingenTotal ?? 0)}
+                    </div>
+                    <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>totaal verwacht</div>
+                  </div>
+                </div>
+                <Link
+                  href="/toezeggingen"
+                  className="text-sm font-medium"
+                  style={{ color: "var(--accent-dark)" }}
+                >
+                  Bekijk alle →
+                </Link>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

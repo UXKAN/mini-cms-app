@@ -125,6 +125,30 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 - **Veiligheid:** Service-role staat alleen in `.env.local` en op Vercel server-env, nooit in client-bundle. Input van `/gift`-formulier wordt door Zod gevalideerd (inclusief `akkoord = true`) vóór er iets wordt geschreven.
 - **Herzieningstrigger:** Wanneer middleware-sprint (R3) wordt afgerond — dan kunnen de inserts ook via authenticated server-client met cookies. Service-role-pad blijft alleen voor specifieke admin-acties die expliciet RLS moeten bypassen.
 
+## 2026-05-04 — Goud als donatievorm verschuift naar SaaS-fase
+
+- **Beslissing:** Goud (gewichtsbedrag in gram) als alternatieve donatievorm naast cash/bank/online wordt **niet** in MVP gebouwd. Verplaatst naar SaaS-sprong-lijst. Geen `method='gold'` CHECK-uitbreiding, geen `amount_grams`-kolom, geen UI-keuze.
+- **Waarom:** Goud is feitelijk een tweede valuta met eigen ANBI-overwegingen (waardering in EUR-equivalent, datum-koers, registratie voor jaaroverzicht). Een nette implementatie vereist datamodel-keuzes (gram vs EUR, hoe in dashboard tellen, hoe in ANBI-export) die de toezeggingen-pijler-scope opblazen. Voor MVP-fase A is registratie via `method='other'` met omschrijving als beschrijvende tekst voldoende — niet ideaal maar werkbaar.
+- **Vereist later:** migratie nieuwe `method='gold'` waarde + `amount_grams numeric` kolom + UI-keuze in gift-form en donaties-CRUD + ANBI-jaaroverzicht-aanpassing voor goud-rijen.
+- **Herzieningstrigger:** Bij SaaS-sprong of als Nieuwe Moskee in MVP-fase signaleert dat goud-donaties zo regelmatig binnenkomen dat workaround via `method='other'` administratief onhoudbaar is.
+
+## 2026-05-04 — Toezeggingen-pijler toont gemengde lijst (pledges + onbetaalde gift_agreements)
+
+- **Beslissing:** De `/toezeggingen`-pagina toont **één gemengde lijst** met twee bronnen:
+  1. `pledges`-rijen (mondelinge / e-mail / na-evenement-toezeggingen) met `status` IN ('open', 'partial')
+  2. `gift_agreements`-rijen waar `type='eenmalige'` AND `payment_status` IN ('unpaid', 'partial') — dit zijn ondertekende ANBI-akten waarvoor het geld nog niet binnen is
+  Een type-badge per rij ("Mondeling" / "ANBI-akte") maakt het visueel onderscheid. CRUD (add/edit/delete) is alleen mogelijk voor `pledges`; ANBI-akten komen via `/gift` binnen en worden niet handmatig aangemaakt of verwijderd. Beide brontypen kunnen via een "→ Markeer als betaald"-knop een `donation`-rij genereren met de juiste FK (`pledge_id` of `gift_agreement_id`).
+- **Waarom:** Vanuit de penningmeester-blik is "wat is er aan geld toegezegd dat nog niet binnen is" één vraag, ongeacht of het mondeling of via ANBI-akte was. Twee aparte tabs zou kunstmatige scheiding zijn op basis van datamodel-detail dat de gebruiker niet hoeft te kennen. Eén lijst met badge schaalt goed tot honderden rijen.
+- **Implicatie:** Sortering op datum is een mix van `pledged_at` (pledges) en `akkoord_at` (gift_agreements) — gebruiken we als gemeenschappelijk "toegezegd-op"-veld in de UI.
+- **Herzieningstrigger:** Als gebruikers signaleren dat ze de twee bronnen écht apart willen zien, of als kolom-vereisten zo verschillend worden dat één tabel onhandig is.
+
+## 2026-05-04 — Veldnaamgeving "Omschrijving" voor publiek doel-veld
+
+- **Beslissing:** Het tekstveld voor "wat is dit voor donatie / toezegging" heet in de UI **"Omschrijving"** en wordt overal hetzelfde gelabeld (`/donaties` CRUD, `/toezeggingen` CRUD, `/gift`-formulier voor eenmalige). DB-namen blijven ongewijzigd (`donations.notes`, `pledges.purpose`, nieuwe `gift_agreements.purpose`). Eén veld per entiteit — geen aparte "publiek" + "intern"-velden.
+- **Waarom:** Status-check 2026-05-04 wees uit dat het bestaande "Notities"-label op `/donaties` met placeholder "Omschrijving, doel, etc." al in praktijk als omschrijvingsveld werd gebruikt. Eén consistente term voorkomt verwarring; rename in UI is goedkoper dan extra DB-kolom + dubbele invoer. Pledges had al een aparte `purpose`-kolom; voor `gift_agreements` komt er een vergelijkbare `purpose`-kolom bij (migratie 012).
+- **Implicatie:** Bij eenmalige donatie via `/gift` schrijft de actie de omschrijving zowel naar `gift_agreements.purpose` (akte-record) als — bij `payment_status='paid'` — naar `donations.notes` (de bijhorende donation). Bij latere matching van een onbetaalde akte wordt de purpose meegekopieerd naar de nieuwe donation.
+- **Herzieningstrigger:** Als blijkt dat penningmeester én publieke schenker écht andere informatie kwijt willen in dezelfde tabel — dan komt er een tweede veld bij.
+
 ## 2026-05-03 — Cashgeld-formulier verschuift naar SaaS-fase
 
 - **Beslissing:** Cashgeld-/kwitantie-formulier (mobile-first, vrijwilliger op telefoon) wordt verplaatst van MVP naar SaaS-fase. Voor MVP blijft cash registreren mogelijk via `/donaties` CRUD met `method='cash'`. Geen aparte publieke route, geen eigen mobile-flow. De bestaande `donations.signature_png` en `donations.receipt_photo_url` kolommen blijven staan voor wanneer de feature er wel komt.

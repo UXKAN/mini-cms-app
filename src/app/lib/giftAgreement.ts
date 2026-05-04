@@ -65,6 +65,12 @@ export const giftSchema = z
     payment_status: z.string().optional(),
     payment_date: z.string().optional(),
 
+    purpose: z
+      .string()
+      .trim()
+      .max(500, "Omschrijving mag maximaal 500 tekens zijn")
+      .optional(),
+
     wants_membership: z.string().optional(),
 
     akkoord: z.literal(true, {
@@ -180,6 +186,8 @@ export type GiftFormState = {
   payment_status: PaymentStatusChoice;
   payment_date: string;
 
+  purpose: string;
+
   wants_membership: WantsMembershipChoice;
 
   akkoord: boolean;
@@ -211,6 +219,8 @@ export const emptyGiftFormState: GiftFormState = {
   payment_method: "",
   payment_status: "",
   payment_date: "",
+
+  purpose: "",
 
   wants_membership: "",
 

@@ -96,6 +96,7 @@ export async function submitGiftAgreement(
     wants_membership:
       data.type === "periodieke" ? data.wants_membership === "yes" : null,
     agreement_status: "signed",
+    purpose: data.type === "eenmalige" && data.purpose ? data.purpose : null,
     akkoord_overeenkomst: data.akkoord,
     akkoord_at: new Date().toISOString(),
     iban: data.iban,
@@ -121,6 +122,9 @@ export async function submitGiftAgreement(
   if (isPaid && data.payment_method && data.bedrag_eenmalig) {
     const donatedAt =
       data.payment_date || new Date().toISOString().slice(0, 10);
+    const donationNotes = data.purpose
+      ? `${data.purpose} (Via ANBI-formulier #${referenceCode})`
+      : `Via ANBI-formulier #${referenceCode}`;
     const { error: donationError } = await supabase.from("donations").insert({
       org_id: organizationId,
       member_id: null,
@@ -131,7 +135,7 @@ export async function submitGiftAgreement(
       signature_png:
         data.payment_method === "cash" ? data.handtekening_png : null,
       source: "gift_form",
-      notes: `Via ANBI-formulier #${referenceCode}`,
+      notes: donationNotes,
     });
     if (donationError) {
       console.error("[gift] insert donation error", donationError);

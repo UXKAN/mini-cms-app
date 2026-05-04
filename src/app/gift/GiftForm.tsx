@@ -412,6 +412,24 @@ export function GiftForm() {
                   />
                 </Field>
               )}
+
+              <Field
+                label="Omschrijving (optioneel)"
+                error={errors.purpose}
+              >
+                <textarea
+                  value={form.purpose}
+                  onChange={(e) => update("purpose", e.target.value)}
+                  placeholder="Bijvoorbeeld: Ramadan-fonds, gevel-renovatie, vrije bestemming"
+                  rows={2}
+                  maxLength={500}
+                  data-error={!!errors.purpose}
+                  className={cn(
+                    "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 resize-y",
+                    errors.purpose && "border-destructive ring-destructive/20"
+                  )}
+                />
+              </Field>
             </>
           )}
         </CardContent>
