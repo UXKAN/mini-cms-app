@@ -89,7 +89,10 @@ export async function submitGiftAgreement(
       : null,
     payment_method_intent: isEenmalige ? data.payment_method : null,
     payment_status: isEenmalige ? data.payment_status : null,
-    paid_at: isPaid ? new Date().toISOString() : null,
+    paid_at:
+      isPaid && data.payment_date
+        ? new Date(data.payment_date + "T12:00:00Z").toISOString()
+        : null,
     wants_membership:
       data.type === "periodieke" ? data.wants_membership === "yes" : null,
     agreement_status: "signed",
@@ -138,44 +141,89 @@ export async function submitGiftAgreement(
     }
   }
 
-  // 3. Periodieke + lid -> member + update gift_agreement.member_id
+  // 3. Periodieke + lid -> member (hergebruik of nieuw) + update gift_agreement.member_id
   if (wantsMember) {
     const { first, last } = splitName(data.schenker_naam);
-    const { data: insertedMember, error: memberError } = await supabase
-      .from("members")
-      .insert({
-        org_id: organizationId,
-        first_name: first || null,
-        last_name: last || null,
-        name: data.schenker_naam,
-        email: data.schenker_email,
-        phone: data.schenker_telefoon,
-        address: data.schenker_adres,
-        postcode: data.schenker_postcode,
-        city: data.schenker_woonplaats,
-        iban: data.iban,
-        status: "active",
-        monthly_amount: null, // bedrag staat al in gift_agreement
-        notes: `Aangemaakt via ANBI-formulier #${referenceCode}`,
-      })
-      .select("id")
-      .single();
 
-    if (memberError || !insertedMember) {
-      console.error("[gift] insert member error", memberError);
+    // Eerst kijken of er al een actieve member is met dit e-mailadres in dezelfde org;
+    // voorkomt dubbele rijen bij dubbel-insturen of bestaand lid dat opnieuw tekent.
+    const { data: existingMember, error: lookupError } = await supabase
+      .from("members")
+      .select("id")
+      .eq("org_id", organizationId)
+      .ilike("email", data.schenker_email)
+      .neq("status", "cancelled")
+      .maybeSingle();
+
+    let memberId: string | null = null;
+    let memberWasJustCreated = false;
+
+    if (lookupError) {
+      console.error("[gift] lookup member error", lookupError);
       sideWarnings.push(
-        "De inzending is opgeslagen, maar het lidmaatschap kon niet automatisch aangemaakt worden."
+        "De inzending is opgeslagen, maar het lidmaatschap kon niet worden gecontroleerd."
       );
+    } else if (existingMember) {
+      memberId = existingMember.id;
     } else {
+      const { data: insertedMember, error: memberError } = await supabase
+        .from("members")
+        .insert({
+          org_id: organizationId,
+          first_name: first || null,
+          last_name: last || null,
+          name: data.schenker_naam,
+          email: data.schenker_email,
+          phone: data.schenker_telefoon,
+          address: data.schenker_adres,
+          postcode: data.schenker_postcode,
+          city: data.schenker_woonplaats,
+          iban: data.iban,
+          status: "active",
+          monthly_amount: null, // bedrag staat al in gift_agreement
+          notes: `Aangemaakt via ANBI-formulier #${referenceCode}`,
+        })
+        .select("id")
+        .single();
+
+      if (memberError || !insertedMember) {
+        console.error("[gift] insert member error", memberError);
+        sideWarnings.push(
+          "De inzending is opgeslagen, maar het lidmaatschap kon niet automatisch aangemaakt worden."
+        );
+      } else {
+        memberId = insertedMember.id;
+        memberWasJustCreated = true;
+      }
+    }
+
+    if (memberId) {
       const { error: updateError } = await supabase
         .from("gift_agreements")
-        .update({ member_id: insertedMember.id })
+        .update({ member_id: memberId })
         .eq("id", id);
       if (updateError) {
         console.error(
           "[gift] update gift_agreement.member_id error",
           updateError
         );
+        sideWarnings.push(
+          "De inzending is opgeslagen, maar de koppeling met het lidmaatschap kon niet worden opgeslagen."
+        );
+        // Rollback: anders blijft een net aangemaakte member zonder gift_agreement-koppeling staan.
+        // Bestaande member nooit verwijderen.
+        if (memberWasJustCreated) {
+          const { error: rollbackError } = await supabase
+            .from("members")
+            .delete()
+            .eq("id", memberId);
+          if (rollbackError) {
+            console.error("[gift] rollback member error", rollbackError);
+            sideWarnings.push(
+              "Een tijdelijke administratie-record kon niet worden opgeruimd; we kijken er handmatig naar."
+            );
+          }
+        }
       }
     }
   }

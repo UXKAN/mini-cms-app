@@ -36,7 +36,7 @@ export type OrganizationMember = {
   created_at: string;
 };
 
-export type ImportEntityType = "members" | "payments";
+export type ImportEntityType = "members" | "donations" | "pledges";
 export type ImportStatus = "pending" | "committed" | "rolled_back";
 export type ImportRowAction = "insert" | "update" | "skip" | "error";
 

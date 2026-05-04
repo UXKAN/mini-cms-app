@@ -51,7 +51,10 @@ export const giftSchema = z
     schenker_postcode: z.string().min(4, "Vul een geldige postcode in"),
     schenker_woonplaats: z.string().min(2, "Vul de woonplaats in"),
     schenker_land: z.string().min(2, "Vul het land in"),
-    schenker_email: z.string().email("Vul een geldig e-mailadres in"),
+    schenker_email: z
+      .string()
+      .trim()
+      .email("Vul een geldig e-mailadres in"),
 
     type: z.enum(["periodieke", "eenmalige"]),
     bedrag_per_maand: z.string().optional(),
