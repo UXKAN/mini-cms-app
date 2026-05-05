@@ -133,6 +133,7 @@ function MembersInner() {
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const [memRes, giftRes] = await Promise.all([
       supabase
         .from("members")
@@ -296,7 +297,7 @@ function MembersInner() {
       />
 
       {loading ? (
-        <TableLoadingState columns={7} />
+        <TableLoadingState columns={8} />
       ) : t.isEmpty ? (
         <EmptyState
           icon={<Users className="h-6 w-6" />}

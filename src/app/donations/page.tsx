@@ -91,6 +91,7 @@ function DonationsInner() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const [donRes, memRes] = await Promise.all([
       supabase
         .from("donations")
@@ -248,7 +249,7 @@ function DonationsInner() {
       />
 
       {loading ? (
-        <TableLoadingState columns={6} />
+        <TableLoadingState columns={7} />
       ) : t.isEmpty ? (
         <EmptyState
           icon={<HandCoins className="h-6 w-6" />}
