@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   Shield,
@@ -19,13 +20,14 @@ import { OrgContext } from "../lib/orgContext";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { GiftFormDialog } from "./GiftFormDialog";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/members", label: "Leden", Icon: Users },
-  { href: "/ondernemers", label: "Ondernemers", Icon: Briefcase },
   { href: "/donations", label: "Donaties", Icon: Heart },
   { href: "/toezeggingen", label: "Toezeggingen", Icon: FileCheck },
+  { href: "/ondernemers", label: "Ondernemers", Icon: Briefcase },
   { href: "/evenementen", label: "Evenementen", Icon: Calendar },
 ];
 
@@ -33,6 +35,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
   const { org, loading: orgLoading } = useCurrentOrg(user);
+  const [giftFormOpen, setGiftFormOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -71,12 +74,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* Nieuwe donatie CTA */}
+          {/* Nieuwe donatie CTA — opent gift-formulier in fullscreen modal */}
           <div className="px-3 pb-3">
             <Button
               className="w-full text-sm"
               size="sm"
-              onClick={() => {}}
+              onClick={() => setGiftFormOpen(true)}
             >
               + Nieuwe donatie
             </Button>
@@ -145,6 +148,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* ── Main content ── */}
         <main className="flex-1 px-14 py-10 min-w-0">{children}</main>
       </div>
+
+      <GiftFormDialog open={giftFormOpen} onOpenChange={setGiftFormOpen} />
     </OrgContext.Provider>
   );
 }

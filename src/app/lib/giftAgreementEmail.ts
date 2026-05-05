@@ -146,8 +146,8 @@ export function buildConfirmationEmail(
                 ${row("Land", escapeHtml(data.schenker_land))}
                 ${row("E-mail", escapeHtml(data.schenker_email))}
                 ${row("Telefoon", escapeHtml(data.schenker_telefoon))}
-                ${row("IBAN", escapeHtml(data.iban))}
-                ${row("Naam rekeninghouder", escapeHtml(data.rekeninghouder))}
+                ${data.iban ? row("IBAN", escapeHtml(data.iban)) : ""}
+                ${data.rekeninghouder ? row("Naam rekeninghouder", escapeHtml(data.rekeninghouder)) : ""}
               </table>
             </td>
           </tr>
@@ -217,8 +217,8 @@ export function buildConfirmationEmail(
     `Land: ${data.schenker_land}`,
     `E-mail: ${data.schenker_email}`,
     `Telefoon: ${data.schenker_telefoon}`,
-    `IBAN: ${data.iban}`,
-    `Naam rekeninghouder: ${data.rekeninghouder}`,
+    data.iban ? `IBAN: ${data.iban}` : null,
+    data.rekeninghouder ? `Naam rekeninghouder: ${data.rekeninghouder}` : null,
     ``,
     `--- Ondertekening ---`,
     `Plaats: ${data.ondertekening_plaats}`,

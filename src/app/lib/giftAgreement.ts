@@ -77,11 +77,8 @@ export const giftSchema = z
       message: "U moet akkoord gaan met de overeenkomst",
     }),
 
-    iban: z
-      .string()
-      .min(15, "Vul een geldig IBAN in")
-      .max(34, "IBAN te lang"),
-    rekeninghouder: z.string().min(2, "Vul de naam van de rekeninghouder in"),
+    iban: z.string().max(34, "IBAN te lang").optional().or(z.literal("")),
+    rekeninghouder: z.string().max(100).optional().or(z.literal("")),
 
     ondertekening_plaats: z.string().min(2, "Vul de plaats in"),
     ondertekening_datum: z.string().min(1, "Datum is verplicht"),
@@ -149,6 +146,27 @@ export const giftSchema = z
           code: "custom",
           path: ["payment_date"],
           message: "Vul de betaaldatum in",
+        });
+      }
+    }
+
+    // IBAN + rekeninghouder zijn verplicht behalve bij eenmalig + cash
+    // (bij cash is er geen IBAN-machtiging nodig).
+    const requiresIban =
+      data.type === "periodieke" || data.payment_method === "bank";
+    if (requiresIban) {
+      if (!data.iban || data.iban.length < 15) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["iban"],
+          message: "Vul een geldig IBAN in",
+        });
+      }
+      if (!data.rekeninghouder || data.rekeninghouder.length < 2) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["rekeninghouder"],
+          message: "Vul de naam van de rekeninghouder in",
         });
       }
     }

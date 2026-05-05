@@ -57,7 +57,9 @@ function DonationsInner() {
     const [donRes, memRes] = await Promise.all([
       supabase
         .from("donations")
-        .select("*, member:members(id, name, first_name, last_name)")
+        .select(
+          "*, member:members(id, name, first_name, last_name), gift_agreement:gift_agreements(id, schenker_naam)"
+        )
         .eq("org_id", org.id)
         .order("donated_at", { ascending: false }),
       supabase
@@ -149,7 +151,7 @@ function DonationsInner() {
                 <TableHead>Datum</TableHead>
                 <TableHead>Bedrag</TableHead>
                 <TableHead>Methode</TableHead>
-                <TableHead>Lid</TableHead>
+                <TableHead>Donateur</TableHead>
                 <TableHead>Omschrijving</TableHead>
                 <TableHead />
               </TableRow>
@@ -167,6 +169,8 @@ function DonationsInner() {
                   <TableCell>
                     {d.member ? (
                       memberLabel(d.member)
+                    ) : d.gift_agreement?.schenker_naam ? (
+                      d.gift_agreement.schenker_naam
                     ) : (
                       <span className="text-muted-foreground italic">Anoniem</span>
                     )}
@@ -314,7 +318,7 @@ function DonationForm({
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Lid (optioneel)</Label>
+          <Label className="text-xs text-muted-foreground">Donateur (optioneel)</Label>
           <select
             value={memberId}
             onChange={(e) => setMemberId(e.target.value)}

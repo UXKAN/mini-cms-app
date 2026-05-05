@@ -471,37 +471,40 @@ export function GiftForm({ onClose }: { onClose?: () => void } = {}) {
         </CardContent>
       </Card>
 
-      {/* Sectie 4 — Betaalgegevens */}
-      <Card>
-        <CardContent className="p-6 sm:p-8 space-y-6">
-          <StepHeader n={4} title="Betaalgegevens" />
+      {/* Sectie 4 — Betaalgegevens (verbergen bij eenmalig + cash:
+          dan is er geen IBAN-machtiging nodig) */}
+      {!(form.type === "eenmalige" && form.payment_method === "cash") && (
+        <Card>
+          <CardContent className="p-6 sm:p-8 space-y-6">
+            <StepHeader n={4} title="Betaalgegevens" />
 
-          <Field label="IBAN" required error={errors.iban}>
-            <Input
-              value={form.iban}
-              onChange={(e) =>
-                update("iban", e.target.value.toUpperCase())
-              }
-              placeholder="NL91 ABNA 0417 1643 00"
-              className="font-mono tracking-wide"
-              data-error={!!errors.iban}
-            />
-          </Field>
+            <Field label="IBAN" required error={errors.iban}>
+              <Input
+                value={form.iban}
+                onChange={(e) =>
+                  update("iban", e.target.value.toUpperCase())
+                }
+                placeholder="NL91 ABNA 0417 1643 00"
+                className="font-mono tracking-wide"
+                data-error={!!errors.iban}
+              />
+            </Field>
 
-          <Field
-            label="Naam rekeninghouder"
-            required
-            error={errors.rekeninghouder}
-          >
-            <Input
-              value={form.rekeninghouder}
-              onChange={(e) => update("rekeninghouder", e.target.value)}
-              placeholder="J. de Vries"
-              data-error={!!errors.rekeninghouder}
-            />
-          </Field>
-        </CardContent>
-      </Card>
+            <Field
+              label="Naam rekeninghouder"
+              required
+              error={errors.rekeninghouder}
+            >
+              <Input
+                value={form.rekeninghouder}
+                onChange={(e) => update("rekeninghouder", e.target.value)}
+                placeholder="J. de Vries"
+                data-error={!!errors.rekeninghouder}
+              />
+            </Field>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sectie 5 — Digitale ondertekening */}
       <Card>

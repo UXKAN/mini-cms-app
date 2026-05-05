@@ -104,6 +104,10 @@ export type DonationWithMember = Donation & {
     first_name: string | null;
     last_name: string | null;
   } | null;
+  gift_agreement: {
+    id: string;
+    schenker_naam: string;
+  } | null;
 };
 
 export type PledgeStatus = "open" | "partial" | "paid" | "cancelled";
