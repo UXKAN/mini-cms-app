@@ -15,39 +15,55 @@ export function GiftFormDialog({
 }) {
   const [progress, setProgress] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   // Reset progress wanneer modal opent
   useEffect(() => {
     if (open) setProgress(0);
   }, [open]);
 
+  // Cleanup pending rAF bij unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  // Scroll-handler: throttle via requestAnimationFrame om setState-storm
+  // tijdens snel scrollen te voorkomen (= minder re-renders, minder flikker).
   function handleScroll() {
-    const el = scrollRef.current;
-    if (!el) return;
-    const scrollable = el.scrollHeight - el.clientHeight;
-    if (scrollable <= 0) {
-      setProgress(0);
-      return;
-    }
-    const pct = Math.max(0, Math.min(100, (el.scrollTop / scrollable) * 100));
-    setProgress(pct);
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const el = scrollRef.current;
+      if (!el) return;
+      const scrollable = el.scrollHeight - el.clientHeight;
+      if (scrollable <= 0) {
+        setProgress(0);
+        return;
+      }
+      const pct = Math.max(
+        0,
+        Math.min(100, (el.scrollTop / scrollable) * 100)
+      );
+      setProgress(pct);
+    });
   }
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay
-          className={cn(
-            "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
-            "duration-[800ms]"
-          )}
-        />
+        {/* Geen Overlay: Content is fullscreen + opaque, dus overlay-tint
+            is visueel onbereikbaar. Click-outside-to-close is bovendien
+            niet mogelijk omdat er geen "outside" is. Esc-toets en de
+            Sluiten-knop sluiten de modal nog steeds (Radix Dialog default).
+            Content: eigen stacking-context (isolate) + GPU-laag (transform-gpu)
+            voorkomen flikker tijdens scroll/repaint. */}
         <DialogPrimitive.Content
           onOpenAutoFocus={(e) => e.preventDefault()}
           className={cn(
             "fixed inset-0 z-50 flex flex-col bg-background overflow-hidden",
+            "isolate transform-gpu will-change-transform",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
             "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
