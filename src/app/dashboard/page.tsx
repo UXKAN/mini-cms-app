@@ -15,6 +15,8 @@ import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { GiftFormDialog } from "./_components/GiftFormDialog";
 import type { Member } from "../lib/types";
 
 /* ─── helpers ─────────────────────────────────────── */
@@ -76,6 +78,9 @@ export default function DashboardPage() {
 
   // Niet-gematcht state
   const [unmatchedCount, setUnmatchedCount] = useState<number | null>(null);
+
+  // Gift-form modal state
+  const [giftFormOpen, setGiftFormOpen] = useState(false);
 
   // Loading
   const [loading, setLoading] = useState(true);
@@ -262,14 +267,28 @@ export default function DashboardPage() {
   return (
     <AppShell>
       {/* Header */}
-      <header className="mb-8">
-        <h1 className="font-serif text-[40px] font-normal leading-tight" style={{ color: "var(--ink)" }}>
-          Dashboard
-        </h1>
-        <p className="text-sm mt-1 capitalize" style={{ color: "var(--ink-muted)" }}>
-          Overzicht · {today}
-        </p>
+      <header className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-serif text-[40px] font-normal leading-tight" style={{ color: "var(--ink)" }}>
+            Dashboard
+          </h1>
+          <p className="text-sm mt-1 capitalize" style={{ color: "var(--ink-muted)" }}>
+            Overzicht · {today}
+          </p>
+        </div>
+        <Button onClick={() => setGiftFormOpen(true)} size="lg">
+          + Formulier invullen
+        </Button>
       </header>
+
+      <GiftFormDialog
+        open={giftFormOpen}
+        onOpenChange={(open) => {
+          setGiftFormOpen(open);
+          // Refresh dashboard-cijfers wanneer modal sluit (na succesvolle inzending).
+          if (!open && user) load();
+        }}
+      />
 
       {/* ── Row 1: Donation chart ── */}
       <Card className="mb-5">

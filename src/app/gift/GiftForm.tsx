@@ -26,7 +26,7 @@ import {
 
 type Errors = Partial<Record<keyof GiftFormState, string>>;
 
-export function GiftForm() {
+export function GiftForm({ onClose }: { onClose?: () => void } = {}) {
   const [form, setForm] = useState<GiftFormState>(emptyGiftFormState);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -106,6 +106,7 @@ export function GiftForm() {
         scenario={submitted.scenario}
         mailWarning={submitted.mailWarning}
         onReset={handleReset}
+        onClose={onClose}
       />
     );
   }

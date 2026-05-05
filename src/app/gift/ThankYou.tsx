@@ -11,6 +11,7 @@ type Props = {
   scenario: GiftScenario;
   mailWarning?: string;
   onReset: () => void;
+  onClose?: () => void;
 };
 
 function scenarioContent(scenario: GiftScenario): {
@@ -68,6 +69,7 @@ export function ThankYou({
   scenario,
   mailWarning,
   onReset,
+  onClose,
 }: Props) {
   const { title, body } = scenarioContent(scenario);
 
@@ -105,10 +107,15 @@ export function ThankYou({
         </p>
       )}
 
-      <div className="pt-2">
+      <div className="pt-2 flex flex-wrap justify-center gap-2">
         <Button type="button" variant="outline" onClick={onReset}>
           Nieuw formulier invullen
         </Button>
+        {onClose && (
+          <Button type="button" onClick={onClose}>
+            Sluiten
+          </Button>
+        )}
       </div>
     </Card>
   );
