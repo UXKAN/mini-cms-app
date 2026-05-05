@@ -13,7 +13,6 @@ import type {
   PledgeStatus,
 } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -31,29 +30,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useTableState } from "../lib/useTableState";
+import { TableToolbar } from "@/components/table/TableToolbar";
+import { TableSearch } from "@/components/table/TableSearch";
+import { TableStatusFilter } from "@/components/table/TableStatusFilter";
+import { TableFilterButton, ActiveFilterChips } from "@/components/table/TableFilterButton";
+import { TableBulkBar } from "@/components/table/TableBulkBar";
+import { RowActionsMenu } from "@/components/table/RowActionsMenu";
+import { RowSelectCheckbox } from "@/components/table/RowSelectCheckbox";
+import { ConfirmDeleteDialog } from "@/components/table/ConfirmDeleteDialog";
+import { EmptyState } from "@/components/table/EmptyState";
+import { ZeroResults } from "@/components/table/ZeroResults";
+import { TableLoadingState } from "@/components/table/LoadingState";
+import { StatCard } from "@/components/table/StatCard";
+import { exportCsv } from "../lib/exportCsv";
+import { fmtDate, fmtEuro } from "../lib/formatters";
+import { HandshakeIcon, Trash2, Download, Eye, Pencil, CheckCircle, Mail } from "lucide-react";
 
 /* ─── helpers ─────────────────────────────────────── */
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
-
-function fmtEuro(n: number): string {
-  return new Intl.NumberFormat("nl-NL", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 2,
-  }).format(n);
-}
-
-function fmtDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("nl-NL", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function memberLabel(
   m: Pick<Member, "name" | "first_name" | "last_name"> | null | undefined
@@ -86,6 +82,16 @@ const STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-amber-100 text-amber-900",
 };
 
+/* ─── status dropdown options ─────────────────────── */
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "Alle toezeggingen" },
+  { value: "open", label: "Open" },
+  { value: "partial", label: "Deels betaald" },
+  { value: "paid", label: "Voldaan" },
+  { value: "cancelled", label: "Geannuleerd" },
+];
+
 /* ─── normalized row-type ─────────────────────────── */
 
 type SourceType = "pledge" | "gift_agreement";
@@ -113,6 +119,7 @@ type ToezeggingRow = {
   description: string | null;
   pledged_at: string | null;
   deadline: string | null;
+  /* normalized status — pledge uses status directly; gift_agreement maps payment_status */
   status: string;
   source_label: string;
   member_id: string | null;
@@ -120,6 +127,17 @@ type ToezeggingRow = {
   member_email: string | null;
   raw: PledgeFull | GiftAgreementSlim;
 };
+
+/* Maps gift_agreement payment_status → pledge-status vocabulary */
+function normalizeStatus(
+  type: SourceType,
+  rawStatus: string
+): string {
+  if (type === "pledge") return rawStatus;
+  // gift_agreement: unpaid → open, partial → partial, paid → paid
+  if (rawStatus === "unpaid") return "open";
+  return rawStatus; // "partial" and "paid" are identical
+}
 
 /* ─── modal state ─────────────────────────────────── */
 
@@ -145,6 +163,24 @@ function ToezeggingenInner() {
   const [error, setError] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>("closed");
   const [activeRow, setActiveRow] = useState<ToezeggingRow | null>(null);
+
+  /* confirmState uses prefixed keys: "pledge:<id>" */
+  const [confirmState, setConfirmState] = useState<
+    | { mode: "single"; id: string; label: string }
+    | { mode: "bulk"; ids: string[] }
+    | null
+  >(null);
+
+  const t = useTableState<ToezeggingRow>({
+    items: rows,
+    rowKey: (r) => `${r.type}:${r.id}`,
+    searchFields: (r) =>
+      [r.member_name, r.member_email ?? "", r.description ?? "", String(r.amount)]
+        .join(" "),
+    statusOf: (r) => r.status,
+    dateOf: (r) => r.pledged_at,
+    isSelectable: (r) => r.type === "pledge",
+  });
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -214,7 +250,7 @@ function ToezeggingenInner() {
       description: g.purpose,
       pledged_at: g.akkoord_at ? g.akkoord_at.slice(0, 10) : null,
       deadline: null,
-      status: g.payment_status ?? "unpaid",
+      status: normalizeStatus("gift_agreement", g.payment_status ?? "unpaid"),
       source_label: "ANBI-akte",
       member_id: g.member_id,
       member_name: g.member ? memberLabel(g.member) : g.schenker_naam,
@@ -255,19 +291,9 @@ function ToezeggingenInner() {
     setActiveRow(null);
   };
 
-  const handleDeletePledge = async (id: string) => {
-    if (!confirm("Toezegging verwijderen?")) return;
-    const { error } = await supabase.from("pledges").delete().eq("id", id);
-    if (error) setError(error.message);
-    else await fetchAll();
-  };
-
   const sendReminderMailto = (row: ToezeggingRow) => {
     const email = row.member_email;
-    if (!email) {
-      alert("Geen e-mailadres bekend voor deze toezegging.");
-      return;
-    }
+    if (!email) return;
     const subject = encodeURIComponent(
       "Herinnering toezegging — Nieuwe Moskee Enschede"
     );
@@ -286,13 +312,70 @@ function ToezeggingenInner() {
       `Bestuur Nieuwe Moskee Enschede`,
     ];
     const body = encodeURIComponent(lines.join("\n"));
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    window.location.assign(`mailto:${email}?subject=${subject}&body=${body}`);
   };
 
+  const askDeleteSingle = (row: ToezeggingRow) => {
+    if (row.type !== "pledge") return;
+    setConfirmState({
+      mode: "single",
+      id: row.id,
+      label: `${fmtEuro(row.amount)} van ${row.member_name}`,
+    });
+  };
+
+  const askDeleteBulk = () => {
+    /* selectedKeys are "pledge:<id>" — extract pledge ids only */
+    const pledgeIds = Array.from(t.selectedKeys)
+      .filter((k) => k.startsWith("pledge:"))
+      .map((k) => k.slice("pledge:".length));
+    if (pledgeIds.length === 0) return;
+    setConfirmState({ mode: "bulk", ids: pledgeIds });
+  };
+
+  const performDelete = async () => {
+    if (!confirmState) return;
+    const ids =
+      confirmState.mode === "single" ? [confirmState.id] : confirmState.ids;
+    const { error: delError } = await supabase
+      .from("pledges")
+      .delete()
+      .in("id", ids);
+    if (delError) {
+      setError(delError.message);
+      return;
+    }
+    t.clearSelection();
+    setConfirmState(null);
+    await fetchAll();
+  };
+
+  const handleExport = (exportRows: ToezeggingRow[]) => {
+    exportCsv(`toezeggingen-${new Date().toISOString().slice(0, 10)}`, exportRows, [
+      { key: "type", label: "Type", get: (r) => r.source_label },
+      { key: "donor", label: "Donateur", get: (r) => r.member_name },
+      {
+        key: "amount",
+        label: "Bedrag",
+        get: (r) => r.amount.toFixed(2).replace(".", ","),
+      },
+      { key: "description", label: "Omschrijving", get: (r) => r.description ?? "" },
+      { key: "pledged_at", label: "Toegezegd op", get: (r) => r.pledged_at ?? "" },
+      { key: "deadline", label: "Deadline", get: (r) => r.deadline ?? "" },
+      { key: "status", label: "Status", get: (r) => PLEDGE_STATUS_LABELS[r.status as PledgeStatus] ?? r.status },
+    ]);
+  };
+
+  /* stat-card metrics — always computed from full rows array */
   const totalOpen = rows.reduce((s, r) => s + r.amount, 0);
   const today = todayIso();
   const overdueCount = rows.filter(
     (r) => r.deadline && r.deadline < today
+  ).length;
+
+  /* selected pledge count (for bulk-bar label) */
+  const selectedPledgeCount = Array.from(t.selectedKeys).filter((k) =>
+    k.startsWith("pledge:")
   ).length;
 
   return (
@@ -307,160 +390,268 @@ function ToezeggingenInner() {
             geld nog niet binnen is.
           </p>
         </div>
-        <Button onClick={openAddPledge}>+ Nieuwe toezegging</Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-              Aantal openstaand
-            </div>
-            <div className="font-serif text-3xl">{rows.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-              Totaal openstaand
-            </div>
-            <div className="font-serif text-3xl">{fmtEuro(totalOpen)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-              Verlopen
-            </div>
-            <div className="font-serif text-3xl">{overdueCount}</div>
-          </CardContent>
-        </Card>
       </div>
 
       {error && (
-        <Card className="mb-4 border-destructive">
-          <CardContent className="p-4 text-sm text-destructive">
-            {error}
-          </CardContent>
-        </Card>
+        <div
+          className="p-3 rounded-[7px] mb-4 text-sm"
+          style={{ background: "var(--error-light)", color: "var(--error)" }}
+        >
+          {error}
+        </div>
       )}
 
-      <Card>
-        <CardContent className="p-0">
+      {!t.isEmpty && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <StatCard label="Aantal openstaand" value={String(rows.length)} />
+          <StatCard label="Totaal openstaand" value={fmtEuro(totalOpen)} />
+          <StatCard label="Verlopen" value={String(overdueCount)} />
+        </div>
+      )}
+
+      <TableToolbar
+        left={
+          <TableSearch
+            value={t.searchInput}
+            onChange={t.setSearchInput}
+            placeholder="Zoek op naam, omschrijving of bedrag…"
+          />
+        }
+        right={
+          <>
+            <TableStatusFilter
+              labelPrefix="Status"
+              value={t.statusFilter}
+              onChange={t.setStatusFilter}
+              options={STATUS_OPTIONS}
+            />
+            <TableFilterButton period={t.period} onChange={t.setPeriod} />
+            <Button
+              variant="outline"
+              onClick={() => handleExport(t.filteredItems)}
+              disabled={t.filteredItems.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button onClick={openAddPledge}>Toezegging toevoegen</Button>
+          </>
+        }
+      />
+
+      <ActiveFilterChips
+        period={t.period}
+        onClear={() => t.setPeriod({ preset: "all" })}
+      />
+
+      {loading ? (
+        <TableLoadingState columns={9} />
+      ) : t.isEmpty ? (
+        <EmptyState
+          icon={<HandshakeIcon className="h-6 w-6" />}
+          title="Nog geen toezeggingen"
+          description="Open toezeggingen kun je hier bijhouden."
+          actions={<Button onClick={openAddPledge}>Toezegging toevoegen</Button>}
+        />
+      ) : t.isFilteredEmpty ? (
+        <ZeroResults onClearFilters={t.resetFilters} />
+      ) : (
+        <div
+          className="rounded-[10px] border border-border overflow-hidden"
+          style={{ background: "var(--surface)" }}
+        >
           <Table>
             <TableHeader>
               <TableRow>
+                {/* Header checkbox — only selectable rows (pledges) count */}
+                <TableHead className="w-10">
+                  <RowSelectCheckbox
+                    checked={t.isAllVisibleSelected}
+                    indeterminate={t.isSomeVisibleSelected}
+                    onChange={t.toggleAllVisible}
+                    ariaLabel={`Selecteer alle zichtbare toezeggingen`}
+                  />
+                </TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Datum</TableHead>
-                <TableHead className="text-right">Bedrag</TableHead>
                 <TableHead>Persoon</TableHead>
+                <TableHead className="text-right">Bedrag</TableHead>
                 <TableHead>Omschrijving</TableHead>
+                <TableHead>Toegezegd op</TableHead>
                 <TableHead>Deadline</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Acties</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    Laden…
-                  </TableCell>
-                </TableRow>
-              )}
-              {!loading && rows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
-                    <p className="text-muted-foreground mb-3">
-                      Nog geen openstaande toezeggingen.
-                    </p>
-                    <Button variant="outline" onClick={openAddPledge}>
-                      + Eerste toezegging registreren
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )}
-              {!loading &&
-                rows.map((r) => (
-                  <TableRow key={`${r.type}-${r.id}`}>
+              {t.filteredItems.map((r) => {
+                const rowKey = `${r.type}:${r.id}`;
+                const isPledge = r.type === "pledge";
+                return (
+                  <TableRow
+                    key={rowKey}
+                    data-state={t.selectedKeys.has(rowKey) ? "selected" : undefined}
+                  >
+                    {/* Checkbox column: empty cell for gift_agreement rows */}
+                    {isPledge ? (
+                      <TableCell>
+                        <RowSelectCheckbox
+                          checked={t.selectedKeys.has(rowKey)}
+                          onChange={() => t.toggleRow(rowKey)}
+                          ariaLabel={`Selecteer toezegging van ${r.member_name}`}
+                        />
+                      </TableCell>
+                    ) : (
+                      <TableCell />
+                    )}
+
                     <TableCell>
                       <Badge variant="secondary" className="font-normal">
                         {r.source_label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {fmtDate(r.pledged_at)}
-                    </TableCell>
+
+                    <TableCell className="text-sm">{r.member_name}</TableCell>
+
                     <TableCell className="text-right font-medium">
                       {fmtEuro(r.amount)}
                     </TableCell>
-                    <TableCell className="text-sm">{r.member_name}</TableCell>
+
                     <TableCell className="text-sm text-muted-foreground max-w-[240px] truncate">
                       {r.description ?? "—"}
                     </TableCell>
+
+                    <TableCell className="text-sm">
+                      {fmtDate(r.pledged_at)}
+                    </TableCell>
+
                     <TableCell className="text-sm">
                       {fmtDate(r.deadline)}
                     </TableCell>
+
                     <TableCell>
                       <span
                         className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
                           STATUS_COLORS[r.status] ?? "bg-stone-100 text-stone-700"
                         }`}
                       >
-                        {r.type === "pledge"
-                          ? PLEDGE_STATUS_LABELS[r.status as PledgeStatus] ?? r.status
-                          : r.status === "unpaid"
-                            ? "Onbetaald"
-                            : r.status === "partial"
-                              ? "Deels betaald"
-                              : r.status}
+                        {PLEDGE_STATUS_LABELS[r.status as PledgeStatus] ?? r.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openMatchPayment(r)}
-                        >
-                          Markeer betaald
-                        </Button>
-                        {r.member_email && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => sendReminderMailto(r)}
-                          >
-                            Reminder
-                          </Button>
-                        )}
-                        {r.type === "pledge" && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEditPledge(r)}
-                            >
-                              Bewerken
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDeletePledge(r.id)}
-                            >
-                              Verwijderen
-                            </Button>
-                          </>
-                        )}
-                      </div>
+
+                    <TableCell>
+                      <RowActionsMenu
+                        ariaLabel={`Acties voor toezegging van ${r.member_name}`}
+                        actions={
+                          isPledge
+                            ? [
+                                {
+                                  label: "Bekijken",
+                                  icon: <Eye className="h-4 w-4" />,
+                                  onClick: () => openMatchPayment(r),
+                                },
+                                {
+                                  label: "Bewerken",
+                                  icon: <Pencil className="h-4 w-4" />,
+                                  onClick: () => openEditPledge(r),
+                                },
+                                {
+                                  label: "Markeer als betaald",
+                                  icon: <CheckCircle className="h-4 w-4" />,
+                                  onClick: () => openMatchPayment(r),
+                                },
+                                ...(r.member_email
+                                  ? [
+                                      {
+                                        label: "Stuur reminder",
+                                        icon: <Mail className="h-4 w-4" />,
+                                        onClick: () => sendReminderMailto(r),
+                                      },
+                                    ]
+                                  : []),
+                                {
+                                  label: "Verwijderen",
+                                  icon: <Trash2 className="h-4 w-4" />,
+                                  destructive: true,
+                                  separatorBefore: true,
+                                  onClick: () => askDeleteSingle(r),
+                                },
+                              ]
+                            : /* gift_agreement: Bekijken + Markeer als betaald (+ optioneel reminder) */
+                              [
+                                {
+                                  label: "Bekijken",
+                                  icon: <Eye className="h-4 w-4" />,
+                                  onClick: () => openMatchPayment(r),
+                                },
+                                {
+                                  label: "Markeer als betaald",
+                                  icon: <CheckCircle className="h-4 w-4" />,
+                                  onClick: () => openMatchPayment(r),
+                                },
+                                ...(r.member_email
+                                  ? [
+                                      {
+                                        label: "Stuur reminder",
+                                        icon: <Mail className="h-4 w-4" />,
+                                        onClick: () => sendReminderMailto(r),
+                                      },
+                                    ]
+                                  : []),
+                              ]
+                        }
+                      />
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+              })}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      <TableBulkBar
+        count={selectedPledgeCount}
+        onClear={t.clearSelection}
+        actions={[
+          {
+            label: `Exporteer ${selectedPledgeCount}`,
+            icon: <Download className="h-4 w-4" />,
+            onClick: () => {
+              const pledgeIds = new Set(
+                Array.from(t.selectedKeys)
+                  .filter((k) => k.startsWith("pledge:"))
+                  .map((k) => k.slice("pledge:".length))
+              );
+              handleExport(rows.filter((r) => r.type === "pledge" && pledgeIds.has(r.id)));
+            },
+          },
+          {
+            label: `Verwijder ${selectedPledgeCount}`,
+            icon: <Trash2 className="h-4 w-4" />,
+            destructive: true,
+            onClick: askDeleteBulk,
+          },
+        ]}
+      />
+
+      <ConfirmDeleteDialog
+        open={confirmState !== null}
+        onOpenChange={(open) => { if (!open) setConfirmState(null); }}
+        onConfirm={performDelete}
+        mode="financial"
+        title={
+          confirmState?.mode === "bulk"
+            ? `${confirmState.ids.length} toezeggingen verwijderen?`
+            : "Toezegging verwijderen?"
+        }
+        description={
+          confirmState?.mode === "single"
+            ? `Je staat op het punt "${confirmState.label}" definitief te verwijderen.`
+            : confirmState?.mode === "bulk"
+              ? `Je staat op het punt ${confirmState.ids.length} toezeggingen definitief te verwijderen.`
+              : ""
+        }
+      />
 
       {(modalMode === "add_pledge" || modalMode === "edit_pledge") && (
         <PledgeFormDialog
@@ -528,17 +719,17 @@ function PledgeFormDialog({
   );
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = Number(amount);
     if (!amountNum || amountNum <= 0) {
-      setError("Vul een geldig bedrag in (groter dan 0).");
+      setFormError("Vul een geldig bedrag in (groter dan 0).");
       return;
     }
     setSaving(true);
-    setError(null);
+    setFormError(null);
 
     const payload = {
       org_id: orgId,
@@ -559,7 +750,7 @@ function PledgeFormDialog({
     const { error: opError } = await op;
     setSaving(false);
     if (opError) {
-      setError(opError.message);
+      setFormError(opError.message);
       return;
     }
     onSaved();
@@ -670,8 +861,8 @@ function PledgeFormDialog({
             </div>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
+          {formError && (
+            <p className="text-sm text-destructive">{formError}</p>
           )}
 
           <div className="flex justify-end gap-2">
@@ -709,17 +900,17 @@ function MatchPaymentDialog({
   const [description, setDescription] = useState(row.description ?? "");
   const [memberId, setMemberId] = useState(row.member_id ?? "");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = Number(amount);
     if (!amountNum || amountNum <= 0) {
-      setError("Vul een geldig bedrag in.");
+      setFormError("Vul een geldig bedrag in.");
       return;
     }
     setSaving(true);
-    setError(null);
+    setFormError(null);
 
     const donationPayload: Record<string, unknown> = {
       org_id: orgId,
@@ -741,7 +932,7 @@ function MatchPaymentDialog({
       .insert(donationPayload);
     if (donationError) {
       setSaving(false);
-      setError(donationError.message);
+      setFormError(donationError.message);
       return;
     }
 
@@ -753,7 +944,7 @@ function MatchPaymentDialog({
         .eq("id", row.id);
       if (updError) {
         setSaving(false);
-        setError(`Donatie geregistreerd, maar status-update faalde: ${updError.message}`);
+        setFormError(`Donatie geregistreerd, maar status-update faalde: ${updError.message}`);
         return;
       }
     } else {
@@ -768,7 +959,7 @@ function MatchPaymentDialog({
         .eq("id", row.id);
       if (updError) {
         setSaving(false);
-        setError(`Donatie geregistreerd, maar status-update faalde: ${updError.message}`);
+        setFormError(`Donatie geregistreerd, maar status-update faalde: ${updError.message}`);
         return;
       }
     }
@@ -852,7 +1043,7 @@ function MatchPaymentDialog({
             </div>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {formError && <p className="text-sm text-destructive">{formError}</p>}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>

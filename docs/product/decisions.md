@@ -195,6 +195,13 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 - **Waarom:** Zonder rate limiting kan een bot oneindig rijen inserten via de anon-INSERT-policy op `gift_agreements`. Login-gating is een goedkope tijdelijke spam-shield tot R5 (rate limiting / captcha op /gift) is ingebouwd. Voor MVP-fase A (één moskee, intern bestuur logt in) heeft niemand een account-bezwaar; het formulier wordt nu alleen door bestuursleden gebruikt om mee te oefenen.
 - **Herzieningstrigger:** Zodra rate limiting + (optioneel) captcha op /gift staat — dan kan `useAuth` weg en wordt /gift weer publiek per spec. Ook als een echte schenker zonder account het moet kunnen invullen vóór de spam-bescherming klaar is.
 
+## 2026-05-05 — Lichte bulk-acties (delete + export) in MVP
+
+- **Beslissing:** Tabel-cleanup voegt selectie + bulk-bar toe op `/leden`, `/donaties`, `/toezeggingen` met enkel "Verwijder selectie" en "Exporteer selectie". Bulk-status-mutaties expliciet uitgesloten. Hard delete blijft, met extra waarschuwingslaag (checkbox-bevestiging) op financiële records (`donations`, `gift_agreements`). Gift_agreement-rijen op `/toezeggingen` zijn niet selecteerbaar — voorkomt per ongeluk delete van ANBI-akten.
+- **Waarom:** Zelfde UX-investering die anders bij Post-SaaS zou plaatsvinden (`roadmap.md` regel 77: "Bulk-acties (mass e-mail, bulk-update toezeggingen)"), maar zonder de risicovolle status-mass-mutaties. Soft delete blijft uit MVP — niet-selecteerbaar maken van ANBI-akten + financiële confirm-dialog dekt het concrete risico zonder migratie + RLS-aanpassing.
+- **Scope:** alleen `/leden`, `/donaties`, `/toezeggingen`. `/ondernemers` en `/evenementen` (placeholders) krijgen het patroon pas bij echte bouw.
+- **Herzieningstrigger:** Bij Post-SaaS / multi-org wanneer mass-status of mass-email gevraagd wordt, of als de moskee in MVP signaleert dat soft delete echt nodig is.
+
 ## 2026-04-27 — Niet-doelen vastgelegd
 
 - **Beslissing:** Volgende categorieën zijn definitief geen doel: boekhouding, publieke website/CMS, publieke event-ticketing, gebedstijden/Quran-features, e-mail-marketing, multi-vestiging-per-account, native mobiele app voor leden.

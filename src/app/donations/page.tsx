@@ -7,7 +7,6 @@ import AppShell from "../components/AppShell";
 import { useOrg } from "../lib/orgContext";
 import type { DonationMethod, DonationWithMember, Member } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -24,6 +23,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTableState } from "../lib/useTableState";
+import { TableToolbar } from "@/components/table/TableToolbar";
+import { TableSearch } from "@/components/table/TableSearch";
+import { TableStatusFilter } from "@/components/table/TableStatusFilter";
+import { TableFilterButton, ActiveFilterChips } from "@/components/table/TableFilterButton";
+import { TableBulkBar } from "@/components/table/TableBulkBar";
+import { RowActionsMenu } from "@/components/table/RowActionsMenu";
+import { RowSelectCheckbox } from "@/components/table/RowSelectCheckbox";
+import { ConfirmDeleteDialog } from "@/components/table/ConfirmDeleteDialog";
+import { EmptyState } from "@/components/table/EmptyState";
+import { ZeroResults } from "@/components/table/ZeroResults";
+import { TableLoadingState } from "@/components/table/LoadingState";
+import { StatCard } from "@/components/table/StatCard";
+import { exportCsv } from "../lib/exportCsv";
+import { fmtDate, fmtEuro, displayName } from "../lib/formatters";
+import { HandCoins, Trash2, Download, Pencil } from "lucide-react";
 
 const METHOD_LABELS: Record<DonationMethod, string> = {
   cash: "Contant",
@@ -32,12 +47,15 @@ const METHOD_LABELS: Record<DonationMethod, string> = {
   other: "Overig",
 };
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const METHOD_OPTIONS = [
+  { value: "all", label: "Alle methodes" },
+  { value: "bank", label: "Bank" },
+  { value: "online", label: "Online" },
+  { value: "cash", label: "Contant" },
+  { value: "other", label: "Overig" },
+];
 
-function memberLabel(m: Pick<Member, "name" | "first_name" | "last_name">): string {
-  const combined = [m.first_name, m.last_name].filter(Boolean).join(" ").trim();
-  return combined || m.name || "—";
-}
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 type ModalMode = "closed" | "add" | "edit";
 
@@ -52,8 +70,28 @@ function DonationsInner() {
   const [modalMode, setModalMode] = useState<ModalMode>("closed");
   const [editing, setEditing] = useState<DonationWithMember | null>(null);
 
+  const t = useTableState<DonationWithMember>({
+    items: donations,
+    rowKey: (d) => d.id,
+    searchFields: (d) => {
+      const name = d.member
+        ? displayName(d.member)
+        : (d.gift_agreement?.schenker_naam ?? "");
+      return `${name} ${d.notes ?? ""} ${d.amount}`;
+    },
+    statusOf: (d) => d.method,
+    dateOf: (d) => d.donated_at,
+  });
+
+  const [confirmState, setConfirmState] = useState<
+    | { mode: "single"; id: string; label: string }
+    | { mode: "bulk"; ids: string[] }
+    | null
+  >(null);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const [donRes, memRes] = await Promise.all([
       supabase
         .from("donations")
@@ -81,40 +119,81 @@ function DonationsInner() {
   const openEdit = (d: DonationWithMember) => { setEditing(d); setModalMode("edit"); };
   const closeModal = () => { setModalMode("closed"); setEditing(null); };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Donatie verwijderen?")) return;
-    const { error } = await supabase.from("donations").delete().eq("id", id);
-    if (error) setError(error.message);
-    else await fetchAll();
+  const askDeleteSingle = (d: DonationWithMember) => {
+    const name = d.member
+      ? displayName(d.member)
+      : (d.gift_agreement?.schenker_naam ?? "Anoniem");
+    setConfirmState({
+      mode: "single",
+      id: d.id,
+      label: `${fmtEuro(Number(d.amount))} van ${name}`,
+    });
   };
 
-  const total = donations.reduce((sum, d) => sum + Number(d.amount), 0);
-  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
+  const askDeleteBulk = () => {
+    const ids = Array.from(t.selectedKeys);
+    if (ids.length === 0) return;
+    setConfirmState({ mode: "bulk", ids });
+  };
+
+  const performDelete = async () => {
+    if (!confirmState) return;
+    const ids =
+      confirmState.mode === "single" ? [confirmState.id] : confirmState.ids;
+    const { error: delError } = await supabase
+      .from("donations")
+      .delete()
+      .in("id", ids);
+    if (delError) {
+      setError(delError.message);
+      return;
+    }
+    t.clearSelection();
+    setConfirmState(null);
+    await fetchAll();
+  };
+
+  const handleExport = (rows: DonationWithMember[]) => {
+    exportCsv(`donaties-${new Date().toISOString().slice(0, 10)}`, rows, [
+      { key: "donated_at", label: "Datum", get: (d) => d.donated_at },
+      {
+        key: "donor",
+        label: "Donateur",
+        get: (d) =>
+          d.member
+            ? displayName(d.member)
+            : (d.gift_agreement?.schenker_naam ?? "Anoniem"),
+      },
+      {
+        key: "amount",
+        label: "Bedrag",
+        get: (d) => Number(d.amount).toFixed(2).replace(".", ","),
+      },
+      { key: "method", label: "Methode", get: (d) => METHOD_LABELS[d.method] },
+      { key: "notes", label: "Omschrijving", get: (d) => d.notes ?? "" },
+    ]);
+  };
+
+  const yearStart = new Date(new Date().getFullYear(), 0, 1)
+    .toISOString()
+    .slice(0, 10);
   const yearTotal = donations
     .filter((d) => d.donated_at >= yearStart)
     .reduce((sum, d) => sum + Number(d.amount), 0);
+  const total = donations.reduce((sum, d) => sum + Number(d.amount), 0);
 
   return (
     <>
       <div className="flex justify-between items-end mb-7 gap-4 flex-wrap">
         <div>
-          <h1 className="font-serif text-4xl font-normal text-foreground">Donaties</h1>
+          <h1 className="font-serif text-4xl font-normal text-foreground">
+            Donaties
+          </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Registreer donaties en koppel ze optioneel aan een lid.
           </p>
         </div>
-        {donations.length > 0 && (
-          <Button onClick={openAdd}>Donatie toevoegen</Button>
-        )}
       </div>
-
-      {donations.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <StatCard label="Totaal dit jaar" value={formatEuro(yearTotal)} />
-          <StatCard label="Totaal (alles)" value={formatEuro(total)} />
-          <StatCard label="Aantal donaties" value={String(donations.length)} />
-        </div>
-      )}
 
       {error && (
         <div
@@ -125,21 +204,60 @@ function DonationsInner() {
         </div>
       )}
 
-      {loading ? (
-        <p className="text-muted-foreground">Donaties laden...</p>
-      ) : donations.length === 0 ? (
-        <div
-          className="rounded-[10px] border border-border p-14 text-center"
-          style={{ background: "var(--surface)" }}
-        >
-          <h2 className="font-serif text-2xl font-normal text-foreground mb-2">
-            Nog geen donaties
-          </h2>
-          <p className="text-muted-foreground text-sm mb-6">
-            Registreer je eerste donatie en koppel deze optioneel aan een lid.
-          </p>
-          <Button onClick={openAdd}>Donatie toevoegen</Button>
+      {!t.isEmpty && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <StatCard label="Totaal dit jaar" value={fmtEuro(yearTotal)} />
+          <StatCard label="Totaal (alles)" value={fmtEuro(total)} />
+          <StatCard label="Aantal donaties" value={String(donations.length)} />
         </div>
+      )}
+
+      <TableToolbar
+        left={
+          <TableSearch
+            value={t.searchInput}
+            onChange={t.setSearchInput}
+            placeholder="Zoek op naam, omschrijving of bedrag…"
+          />
+        }
+        right={
+          <>
+            <TableStatusFilter
+              labelPrefix="Methode"
+              value={t.statusFilter}
+              onChange={t.setStatusFilter}
+              options={METHOD_OPTIONS}
+            />
+            <TableFilterButton period={t.period} onChange={t.setPeriod} />
+            <Button
+              variant="outline"
+              onClick={() => handleExport(t.filteredItems)}
+              disabled={t.filteredItems.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button onClick={openAdd}>Donatie toevoegen</Button>
+          </>
+        }
+      />
+
+      <ActiveFilterChips
+        period={t.period}
+        onClear={() => t.setPeriod({ preset: "all" })}
+      />
+
+      {loading ? (
+        <TableLoadingState columns={7} />
+      ) : t.isEmpty ? (
+        <EmptyState
+          icon={<HandCoins className="h-6 w-6" />}
+          title="Nog geen donaties"
+          description="Registreer de eerste donatie via de knop hieronder."
+          actions={<Button onClick={openAdd}>Donatie toevoegen</Button>}
+        />
+      ) : t.isFilteredEmpty ? (
+        <ZeroResults onClearFilters={t.resetFilters} />
       ) : (
         <div
           className="rounded-[10px] border border-border overflow-hidden"
@@ -148,48 +266,75 @@ function DonationsInner() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <RowSelectCheckbox
+                    checked={t.isAllVisibleSelected}
+                    indeterminate={t.isSomeVisibleSelected}
+                    onChange={t.toggleAllVisible}
+                    ariaLabel={`Selecteer alle ${t.filteredItems.length} zichtbare donaties`}
+                  />
+                </TableHead>
                 <TableHead>Datum</TableHead>
+                <TableHead>Donateur</TableHead>
                 <TableHead>Bedrag</TableHead>
                 <TableHead>Methode</TableHead>
-                <TableHead>Donateur</TableHead>
                 <TableHead>Omschrijving</TableHead>
-                <TableHead />
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {donations.map((d) => (
-                <TableRow key={d.id}>
+              {t.filteredItems.map((d) => (
+                <TableRow
+                  key={d.id}
+                  data-state={t.selectedKeys.has(d.id) ? "selected" : undefined}
+                >
                   <TableCell>
-                    {new Date(d.donated_at).toLocaleDateString("nl-NL")}
+                    <RowSelectCheckbox
+                      checked={t.selectedKeys.has(d.id)}
+                      onChange={() => t.toggleRow(d.id)}
+                      ariaLabel={`Selecteer donatie van ${
+                        d.member
+                          ? displayName(d.member)
+                          : (d.gift_agreement?.schenker_naam ?? "Anoniem")
+                      }`}
+                    />
                   </TableCell>
-                  <TableCell className="font-semibold">
-                    {formatEuro(Number(d.amount))}
-                  </TableCell>
-                  <TableCell>{METHOD_LABELS[d.method]}</TableCell>
+                  <TableCell>{fmtDate(d.donated_at)}</TableCell>
                   <TableCell>
                     {d.member ? (
-                      memberLabel(d.member)
+                      displayName(d.member)
                     ) : d.gift_agreement?.schenker_naam ? (
                       d.gift_agreement.schenker_naam
                     ) : (
-                      <span className="text-muted-foreground italic">Anoniem</span>
+                      <span className="text-muted-foreground italic">
+                        Anoniem
+                      </span>
                     )}
                   </TableCell>
+                  <TableCell className="font-semibold">
+                    {fmtEuro(Number(d.amount))}
+                  </TableCell>
+                  <TableCell>{METHOD_LABELS[d.method]}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {d.notes ?? "—"}
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
-                      Bewerken
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(d.id)}
-                    >
-                      Verwijderen
-                    </Button>
+                  <TableCell>
+                    <RowActionsMenu
+                      actions={[
+                        {
+                          label: "Bewerken",
+                          icon: <Pencil className="h-4 w-4" />,
+                          onClick: () => openEdit(d),
+                        },
+                        {
+                          label: "Verwijderen",
+                          icon: <Trash2 className="h-4 w-4" />,
+                          destructive: true,
+                          separatorBefore: true,
+                          onClick: () => askDeleteSingle(d),
+                        },
+                      ]}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -197,6 +342,44 @@ function DonationsInner() {
           </Table>
         </div>
       )}
+
+      <TableBulkBar
+        count={t.selectedKeys.size}
+        onClear={t.clearSelection}
+        actions={[
+          {
+            label: `Exporteer ${t.selectedKeys.size}`,
+            icon: <Download className="h-4 w-4" />,
+            onClick: () =>
+              handleExport(
+                donations.filter((d) => t.selectedKeys.has(d.id))
+              ),
+          },
+          {
+            label: `Verwijder ${t.selectedKeys.size}`,
+            icon: <Trash2 className="h-4 w-4" />,
+            destructive: true,
+            onClick: askDeleteBulk,
+          },
+        ]}
+      />
+
+      <ConfirmDeleteDialog
+        open={confirmState !== null}
+        onOpenChange={(o) => !o && setConfirmState(null)}
+        mode="financial"
+        title={
+          confirmState?.mode === "single"
+            ? "Donatie verwijderen?"
+            : `${confirmState?.mode === "bulk" ? confirmState.ids.length : 0} donaties verwijderen?`
+        }
+        description={
+          confirmState?.mode === "single"
+            ? `Donatie ${confirmState.label} wordt permanent verwijderd.`
+            : "Geselecteerde donaties worden permanent verwijderd."
+        }
+        onConfirm={performDelete}
+      />
 
       <Dialog
         open={modalMode !== "closed"}
@@ -326,7 +509,7 @@ function DonationForm({
           >
             <option value="">— anoniem —</option>
             {members.map((m) => (
-              <option key={m.id} value={m.id}>{memberLabel(m)}</option>
+              <option key={m.id} value={m.id}>{displayName(m)}</option>
             ))}
           </select>
         </div>
@@ -360,27 +543,4 @@ function DonationForm({
       </div>
     </form>
   );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">
-          {label}
-        </div>
-        <div className="font-serif text-[32px] font-normal text-foreground mt-1 leading-none">
-          {value}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function formatEuro(n: number) {
-  return n.toLocaleString("nl-NL", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 2,
-  });
 }

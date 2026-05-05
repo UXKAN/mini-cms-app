@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
@@ -26,6 +27,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTableState } from "../lib/useTableState";
+import { TableToolbar } from "@/components/table/TableToolbar";
+import { TableSearch } from "@/components/table/TableSearch";
+import { TableStatusFilter } from "@/components/table/TableStatusFilter";
+import { TableFilterButton, ActiveFilterChips } from "@/components/table/TableFilterButton";
+import { TableBulkBar } from "@/components/table/TableBulkBar";
+import { RowActionsMenu } from "@/components/table/RowActionsMenu";
+import { RowSelectCheckbox } from "@/components/table/RowSelectCheckbox";
+import { ConfirmDeleteDialog } from "@/components/table/ConfirmDeleteDialog";
+import { EmptyState } from "@/components/table/EmptyState";
+import { ZeroResults } from "@/components/table/ZeroResults";
+import { TableLoadingState } from "@/components/table/LoadingState";
+import { StatCard } from "@/components/table/StatCard";
+import { exportCsv } from "../lib/exportCsv";
+import { fmtDate, fmtEuro, displayName } from "../lib/formatters";
+import { Users, Trash2, Download, Eye, Pencil } from "lucide-react";
 
 const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
   { value: "active", label: "Actief" },
@@ -34,12 +51,25 @@ const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
   { value: "cancelled", label: "Opgezegd" },
 ];
 
-type ModalMode = "closed" | "add" | "edit" | "import";
+const STATUS_DROPDOWN_OPTIONS = [
+  { value: "all", label: "Alle leden & donateurs" },
+  { value: "lid-active", label: "Lid · actief" },
+  { value: "lid-inactive", label: "Lid · inactief" },
+  { value: "donateur-active", label: "Donateur · actief" },
+  { value: "donateur-inactive", label: "Donateur · inactief" },
+  { value: "prospect", label: "Prospect" },
+  { value: "cancelled", label: "Opgezegd" },
+];
 
-function displayName(m: Member): string {
-  const combined = [m.first_name, m.last_name].filter(Boolean).join(" ").trim();
-  return combined || m.name || "—";
+function memberStatusKey(m: Member): string {
+  if (m.status === "prospect") return "prospect";
+  if (m.status === "cancelled") return "cancelled";
+  const type = m.membership_type === "lid" ? "lid" : "donateur";
+  const status = m.status === "active" ? "active" : "inactive";
+  return `${type}-${status}`;
 }
+
+type ModalMode = "closed" | "add" | "edit" | "import";
 
 function StatusBadge({ status }: { status: MemberStatus }) {
   if (status === "active") return <Badge>Actief</Badge>;
@@ -72,11 +102,10 @@ function MembershipTypeBadge({ type }: { type: string | null }) {
   return <Badge variant="secondary">{type}</Badge>;
 }
 
-type TypeFilter = "all" | "lid" | "donateur" | "other";
-
 function MembersInner() {
   const { user } = useAuth();
   const org = useOrg();
+  const router = useRouter();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [agreementAmounts, setAgreementAmounts] = useState<Map<string, number>>(
@@ -86,10 +115,25 @@ function MembersInner() {
   const [error, setError] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>("closed");
   const [editing, setEditing] = useState<Member | null>(null);
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+
+  const t = useTableState<Member>({
+    items: members,
+    rowKey: (m) => m.id,
+    searchFields: (m) =>
+      [m.first_name, m.last_name, m.name, m.email].filter(Boolean).join(" "),
+    statusOf: memberStatusKey,
+    dateOf: (m) => m.created_at,
+  });
+
+  const [confirmState, setConfirmState] = useState<
+    | { mode: "single"; id: string; name: string }
+    | { mode: "bulk"; ids: string[] }
+    | null
+  >(null);
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const [memRes, giftRes] = await Promise.all([
       supabase
         .from("members")
@@ -127,54 +171,47 @@ function MembersInner() {
     if (user) fetchMembers();
   }, [user, fetchMembers]);
 
-  const monthlyAmountFor = useCallback(
-    (m: Member): { value: number; viaAkte: boolean } | null => {
-      const fromAkte = agreementAmounts.get(m.id);
-      if (fromAkte && fromAkte > 0) return { value: fromAkte, viaAkte: true };
-      if (m.monthly_amount != null && m.monthly_amount > 0)
-        return { value: Number(m.monthly_amount), viaAkte: false };
-      return null;
-    },
-    [agreementAmounts]
-  );
-
-  const filteredMembers = useMemo(() => {
-    if (typeFilter === "all") return members;
-    if (typeFilter === "other")
-      return members.filter(
-        (m) =>
-          m.membership_type !== "lid" &&
-          m.membership_type !== "donateur" &&
-          m.membership_type
-      );
-    return members.filter((m) => m.membership_type === typeFilter);
-  }, [members, typeFilter]);
-
-  const counts = useMemo(() => {
-    const all = members.length;
-    const lid = members.filter((m) => m.membership_type === "lid").length;
-    const donateur = members.filter(
-      (m) => m.membership_type === "donateur"
-    ).length;
-    const other = members.filter(
-      (m) =>
-        m.membership_type &&
-        m.membership_type !== "lid" &&
-        m.membership_type !== "donateur"
-    ).length;
-    return { all, lid, donateur, other };
-  }, [members]);
-
   const openAdd = () => { setEditing(null); setModalMode("add"); };
   const openEdit = (m: Member) => { setEditing(m); setModalMode("edit"); };
-  const openImport = () => { setEditing(null); setModalMode("import"); };
   const closeModal = () => { setModalMode("closed"); setEditing(null); };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Weet je zeker dat je dit lid wilt verwijderen?")) return;
-    const { error } = await supabase.from("members").delete().eq("id", id);
-    if (error) setError(error.message);
-    else await fetchMembers();
+  const askDeleteSingle = (m: Member) => {
+    setConfirmState({ mode: "single", id: m.id, name: displayName(m) });
+  };
+
+  const askDeleteBulk = () => {
+    const ids = Array.from(t.selectedKeys);
+    if (ids.length === 0) return;
+    setConfirmState({ mode: "bulk", ids });
+  };
+
+  const performDelete = async () => {
+    if (!confirmState) return;
+    const ids = confirmState.mode === "single" ? [confirmState.id] : confirmState.ids;
+    const { error: delError } = await supabase.from("members").delete().in("id", ids);
+    if (delError) {
+      setError(delError.message);
+      return;
+    }
+    t.clearSelection();
+    setConfirmState(null);
+    await fetchMembers();
+  };
+
+  const handleExport = (rows: Member[]) => {
+    exportCsv(`leden-${new Date().toISOString().slice(0, 10)}`, rows, [
+      { key: "name", label: "Naam", get: (m) => displayName(m) },
+      { key: "type", label: "Type", get: (m) => m.membership_type ?? "" },
+      { key: "status", label: "Status", get: (m) => m.status },
+      { key: "email", label: "E-mail", get: (m) => m.email ?? "" },
+      { key: "phone", label: "Telefoon", get: (m) => m.phone ?? "" },
+      {
+        key: "monthly",
+        label: "Bedrag/maand",
+        get: (m) => m.monthly_amount ?? agreementAmounts.get(m.id) ?? "",
+      },
+      { key: "created_at", label: "Aangemaakt", get: (m) => m.created_at },
+    ]);
   };
 
   return (
@@ -183,17 +220,9 @@ function MembersInner() {
         <div>
           <h1 className="font-serif text-4xl font-normal text-foreground">Leden</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Leden en donateurs van de moskee.
+            Beheer leden en donateurs van de moskee.
           </p>
         </div>
-        {members.length > 0 && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={openImport}>
-              Leden importeren
-            </Button>
-            <Button onClick={openAdd}>Lid toevoegen</Button>
-          </div>
-        )}
       </div>
 
       {error && (
@@ -205,146 +234,208 @@ function MembersInner() {
         </div>
       )}
 
+      {!t.isEmpty && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <StatCard
+            label="Totaal leden & donateurs"
+            value={String(members.length)}
+          />
+          <StatCard
+            label="Actieve periodieke giften"
+            value={String(members.filter((m) => agreementAmounts.has(m.id)).length)}
+          />
+          <StatCard
+            label="Nieuwe leden deze maand"
+            value={String(
+              members.filter((m) => {
+                const d = new Date(m.created_at);
+                const now = new Date();
+                return (
+                  d.getFullYear() === now.getFullYear() &&
+                  d.getMonth() === now.getMonth()
+                );
+              }).length
+            )}
+          />
+        </div>
+      )}
+
+      <TableToolbar
+        left={
+          <TableSearch
+            value={t.searchInput}
+            onChange={t.setSearchInput}
+            placeholder="Zoek op naam of e-mail…"
+          />
+        }
+        right={
+          <>
+            <TableStatusFilter
+              labelPrefix="Toon"
+              value={t.statusFilter}
+              onChange={t.setStatusFilter}
+              options={STATUS_DROPDOWN_OPTIONS}
+            />
+            <TableFilterButton period={t.period} onChange={t.setPeriod} />
+            <Button
+              variant="outline"
+              onClick={() => handleExport(t.filteredItems)}
+              disabled={t.filteredItems.length === 0}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button onClick={openAdd}>Nieuw lid</Button>
+          </>
+        }
+      />
+
+      <ActiveFilterChips
+        period={t.period}
+        onClear={() => t.setPeriod({ preset: "all" })}
+      />
+
       {loading ? (
-        <p className="text-muted-foreground">Leden laden...</p>
-      ) : members.length === 0 ? (
+        <TableLoadingState columns={8} />
+      ) : t.isEmpty ? (
+        <EmptyState
+          icon={<Users className="h-6 w-6" />}
+          title="Nog geen leden"
+          description="Voeg leden toe of importeer ze uit Excel."
+          actions={
+            <>
+              <Button onClick={openAdd}>Nieuw lid</Button>
+              <Button variant="outline" onClick={() => setModalMode("import")}>
+                Importeren
+              </Button>
+            </>
+          }
+        />
+      ) : t.isFilteredEmpty ? (
+        <ZeroResults onClearFilters={t.resetFilters} />
+      ) : (
         <div
-          className="rounded-[10px] border border-border p-14 text-center"
+          className="rounded-[10px] border border-border overflow-hidden"
           style={{ background: "var(--surface)" }}
         >
-          <h2 className="font-serif text-2xl font-normal text-foreground mb-2">
-            Nog geen leden
-          </h2>
-          <p className="text-muted-foreground text-sm mb-6">
-            Voeg er één toe of importeer uit Excel of CSV.
-          </p>
-          <div className="flex justify-center gap-2">
-            <Button onClick={openAdd}>Lid toevoegen</Button>
-            <Button variant="outline" onClick={openImport}>
-              Leden importeren
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex gap-2 mb-4 flex-wrap">
-            <Button
-              variant={typeFilter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setTypeFilter("all")}
-            >
-              Alle ({counts.all})
-            </Button>
-            <Button
-              variant={typeFilter === "lid" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setTypeFilter("lid")}
-            >
-              Lid ({counts.lid})
-            </Button>
-            <Button
-              variant={typeFilter === "donateur" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setTypeFilter("donateur")}
-            >
-              Donateur ({counts.donateur})
-            </Button>
-            {counts.other > 0 && (
-              <Button
-                variant={typeFilter === "other" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setTypeFilter("other")}
-              >
-                Overig ({counts.other})
-              </Button>
-            )}
-          </div>
-
-          <div
-            className="rounded-[10px] border border-border overflow-hidden"
-            style={{ background: "var(--surface)" }}
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Naam</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Telefoon</TableHead>
-                  <TableHead>Woonplaats</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Bedrag/maand</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
+                  <RowSelectCheckbox
+                    checked={t.isAllVisibleSelected}
+                    indeterminate={t.isSomeVisibleSelected}
+                    onChange={t.toggleAllVisible}
+                    ariaLabel={`Selecteer alle ${t.filteredItems.length} zichtbare leden`}
+                  />
+                </TableHead>
+                <TableHead>Naam</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>E-mail</TableHead>
+                <TableHead className="text-right">Bedrag/maand</TableHead>
+                <TableHead>Aangemaakt</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {t.filteredItems.map((m) => (
+                <TableRow
+                  key={m.id}
+                  data-state={t.selectedKeys.has(m.id) ? "selected" : undefined}
+                >
+                  <TableCell>
+                    <RowSelectCheckbox
+                      checked={t.selectedKeys.has(m.id)}
+                      onChange={() => t.toggleRow(m.id)}
+                      ariaLabel={`Selecteer ${displayName(m)}`}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/members/${m.id}`} className="hover:underline">
+                      {displayName(m)}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <MembershipTypeBadge type={m.membership_type} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={m.status} />
+                  </TableCell>
+                  <TableCell>{m.email ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    {fmtEuro(
+                      m.monthly_amount != null
+                        ? m.monthly_amount
+                        : (agreementAmounts.get(m.id) ?? null)
+                    )}
+                  </TableCell>
+                  <TableCell>{fmtDate(m.created_at)}</TableCell>
+                  <TableCell>
+                    <RowActionsMenu
+                      actions={[
+                        {
+                          label: "Bekijken",
+                          icon: <Eye className="h-4 w-4" />,
+                          onClick: () => router.push(`/members/${m.id}`),
+                        },
+                        {
+                          label: "Bewerken",
+                          icon: <Pencil className="h-4 w-4" />,
+                          onClick: () => openEdit(m),
+                        },
+                        {
+                          label: "Verwijderen",
+                          icon: <Trash2 className="h-4 w-4" />,
+                          destructive: true,
+                          separatorBefore: true,
+                          onClick: () => askDeleteSingle(m),
+                        },
+                      ]}
+                    />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMembers.map((m) => {
-                  const amt = monthlyAmountFor(m);
-                  return (
-                    <TableRow key={m.id}>
-                      <TableCell className="font-medium">
-                        <Link
-                          href={`/members/${m.id}`}
-                          className="hover:underline"
-                        >
-                          {displayName(m)}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{m.email ?? "—"}</TableCell>
-                      <TableCell>{m.phone ?? "—"}</TableCell>
-                      <TableCell>{m.city ?? "—"}</TableCell>
-                      <TableCell>
-                        <MembershipTypeBadge type={m.membership_type} />
-                      </TableCell>
-                      <TableCell>
-                        {amt ? (
-                          <span>
-                            € {amt.value.toFixed(2)}
-                            {amt.viaAkte && (
-                              <span className="text-xs text-muted-foreground ml-1">
-                                (akte)
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={m.status} />
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEdit(m)}
-                        >
-                          Bewerken
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(m.id)}
-                        >
-                          Verwijderen
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {filteredMembers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Geen leden in deze filter.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
+
+      <TableBulkBar
+        count={t.selectedKeys.size}
+        onClear={t.clearSelection}
+        actions={[
+          {
+            label: `Exporteer ${t.selectedKeys.size}`,
+            icon: <Download className="h-4 w-4" />,
+            onClick: () =>
+              handleExport(members.filter((m) => t.selectedKeys.has(m.id))),
+          },
+          {
+            label: `Verwijder ${t.selectedKeys.size}`,
+            icon: <Trash2 className="h-4 w-4" />,
+            destructive: true,
+            onClick: askDeleteBulk,
+          },
+        ]}
+      />
+
+      <ConfirmDeleteDialog
+        open={confirmState !== null}
+        onOpenChange={(o) => !o && setConfirmState(null)}
+        mode="standard"
+        title={
+          confirmState?.mode === "single"
+            ? "Lid verwijderen?"
+            : `${confirmState?.mode === "bulk" ? confirmState.ids.length : 0} leden verwijderen?`
+        }
+        description={
+          confirmState?.mode === "single"
+            ? `${confirmState.name} wordt permanent verwijderd.`
+            : "Geselecteerde leden worden permanent verwijderd."
+        }
+        onConfirm={performDelete}
+      />
 
       {/* Add / Edit dialog */}
       <Dialog
