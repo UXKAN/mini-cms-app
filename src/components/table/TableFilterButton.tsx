@@ -41,7 +41,7 @@ export function TableFilterButton({ period, onChange }: Props) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" aria-label="Filters openen">
+        <Button variant="outline" aria-label="Filters openen">
           <Filter className="h-4 w-4 mr-2" />
           Filter
         </Button>

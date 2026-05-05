@@ -279,7 +279,6 @@ function MembersInner() {
             <TableFilterButton period={t.period} onChange={t.setPeriod} />
             <Button
               variant="outline"
-              size="sm"
               onClick={() => handleExport(t.filteredItems)}
               disabled={t.filteredItems.length === 0}
             >
