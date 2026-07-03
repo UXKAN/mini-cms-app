@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 import { giftSchema, type GiftFormState } from "../lib/giftAgreement";
+import { todayIsoAmsterdam } from "../lib/formatters";
 import { buildConfirmationEmail } from "../lib/giftAgreementEmail";
 
 export type GiftScenario =
@@ -120,8 +121,8 @@ export async function submitGiftAgreement(
 
   // 2. Eenmalige + voldaan -> donation
   if (isPaid && data.payment_method && data.bedrag_eenmalig) {
-    const donatedAt =
-      data.payment_date || new Date().toISOString().slice(0, 10);
+    // Server draait in UTC; "vandaag" moet Nederlands vandaag zijn.
+    const donatedAt = data.payment_date || todayIsoAmsterdam();
     const donationNotes = data.purpose
       ? `${data.purpose} (Via ANBI-formulier #${referenceCode})`
       : `Via ANBI-formulier #${referenceCode}`;

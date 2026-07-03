@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { toLocalISODate } from "./formatters";
 
 /** ISO `YYYY-MM-DD` matcher die ook reëel-bestaande kalenderdagen verifieert
  *  (zodat bv. `2020-02-31` wordt afgewezen ondanks geldig pattern). */
@@ -248,7 +249,7 @@ export const emptyGiftFormState: GiftFormState = {
   rekeninghouder: "",
 
   ondertekening_plaats: "",
-  ondertekening_datum: new Date().toISOString().split("T")[0],
+  ondertekening_datum: toLocalISODate(new Date()),
   ondertekening_naam: "",
   handtekening_png: "",
 };

@@ -31,6 +31,26 @@ export function fmtDateShort(iso: string | null | undefined): string {
   });
 }
 
+// Lokale datum als YYYY-MM-DD. Bewust géén toISOString(): die converteert naar
+// UTC en verschuift in Nederland (UTC+1/+2) alles vóór 01:00/02:00 een dag terug.
+export function toLocalISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Voor server-code (Vercel draait in UTC): "vandaag" vanuit Nederlands
+// perspectief, onafhankelijk van de proces-tijdzone.
+export function todayIsoAmsterdam(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
 export function displayName(
   m: Pick<Member, "name" | "first_name" | "last_name"> | null | undefined
 ): string {

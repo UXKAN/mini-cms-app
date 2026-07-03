@@ -11,7 +11,10 @@ import {
   XAxis,
 } from "recharts";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../lib/useAuth";
+import { useOrg } from "../lib/orgContext";
+import { toLocalISODate } from "../lib/formatters";
+import { remainingAmount } from "../lib/payments";
+import { fetchPaidByKey } from "../lib/matchedDonations";
 import AppShell from "../components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +53,15 @@ interface TopDonor { id: string; name: string; type: string; amount: number }
 /* ─── main page ────────────────────────────────────── */
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
+  return (
+    <AppShell>
+      <DashboardInner />
+    </AppShell>
+  );
+}
+
+function DashboardInner() {
+  const org = useOrg();
 
   // Chart state
   const [chartMonth, setChartMonth] = useState(new Date());
@@ -81,10 +92,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, chartMonth]);
+  }, [org.id, chartMonth]);
 
   async function load() {
     setLoading(true);
@@ -93,13 +103,13 @@ export default function DashboardPage() {
     const month = chartMonth.getMonth();
 
     // Current month range
-    const monthStart = new Date(year, month, 1).toISOString().slice(0, 10);
-    const monthEnd = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+    const monthStart = toLocalISODate(new Date(year, month, 1));
+    const monthEnd = toLocalISODate(new Date(year, month + 1, 0));
     // Prev month range
-    const prevStart = new Date(year, month - 1, 1).toISOString().slice(0, 10);
-    const prevEnd = new Date(year, month, 0).toISOString().slice(0, 10);
+    const prevStart = toLocalISODate(new Date(year, month - 1, 1));
+    const prevEnd = toLocalISODate(new Date(year, month, 0));
     // Year range
-    const yearStart = new Date(year, 0, 1).toISOString().slice(0, 10);
+    const yearStart = `${year}-01-01`;
 
     const [
       { data: monthDons },
@@ -112,26 +122,37 @@ export default function DashboardPage() {
       { data: periodiekeAkten },
       { data: monthDonsLinked },
       { count: unmatched },
+      matched,
     ] = await Promise.all([
       supabase.from("donations").select("amount, donated_at")
+        .eq("org_id", org.id)
         .gte("donated_at", monthStart).lte("donated_at", monthEnd),
       supabase.from("donations").select("amount")
+        .eq("org_id", org.id)
         .gte("donated_at", prevStart).lte("donated_at", prevEnd),
       supabase.from("donations").select("amount")
+        .eq("org_id", org.id)
         .gte("donated_at", yearStart),
-      supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
+      supabase.from("members").select("*", { count: "exact", head: true })
+        .eq("org_id", org.id).eq("status", "active"),
       supabase.from("members").select("id, name, first_name, last_name, monthly_amount, membership_type, status")
-        .eq("status", "active"),
-      supabase.from("pledges").select("amount").in("status", ["open", "partial"]),
-      supabase.from("gift_agreements").select("bedrag_eenmalig")
+        .eq("org_id", org.id).eq("status", "active"),
+      supabase.from("pledges").select("id, amount")
+        .eq("org_id", org.id).in("status", ["open", "partial"]),
+      supabase.from("gift_agreements").select("id, bedrag_eenmalig")
+        .eq("organization_id", org.id)
         .eq("type", "eenmalige").in("payment_status", ["unpaid", "partial"]),
       supabase.from("gift_agreements").select("id, member_id, bedrag_per_maand")
+        .eq("organization_id", org.id)
         .eq("type", "periodieke").eq("agreement_status", "signed"),
       supabase.from("donations").select("gift_agreement_id")
+        .eq("org_id", org.id)
         .gte("donated_at", monthStart).lte("donated_at", monthEnd)
         .not("gift_agreement_id", "is", null),
       supabase.from("donations").select("*", { count: "exact", head: true })
+        .eq("org_id", org.id)
         .is("pledge_id", null).is("gift_agreement_id", null).is("member_id", null),
+      fetchPaidByKey(org.id),
     ]);
 
     // Chart: group by day
@@ -196,12 +217,28 @@ export default function DashboardPage() {
       .slice(0, 5);
     setTopDonors(donors);
 
+    // Restbedragen (deelbetalingen afgetrokken), consistent met /toezeggingen.
+    // Bij een fout valt dit terug op de vólle bedragen — een gedeeltelijk
+    // opgehaalde map zou een cijfer tonen dat niet vol en niet correct is.
+    const paidByKey = matched.error
+      ? new Map<string, number>()
+      : matched.paidByKey;
     const pledgeTotal = (openPledges ?? []).reduce(
-      (s, p) => s + Number(p.amount ?? 0),
+      (s, p) =>
+        s +
+        remainingAmount(
+          Number(p.amount ?? 0),
+          paidByKey.get(`pledge:${p.id}`) ?? 0
+        ),
       0
     );
     const agreementTotal = (unpaidAgreements ?? []).reduce(
-      (s, a) => s + Number(a.bedrag_eenmalig ?? 0),
+      (s, a) =>
+        s +
+        remainingAmount(
+          Number(a.bedrag_eenmalig ?? 0),
+          paidByKey.get(`gift_agreement:${a.id}`) ?? 0
+        ),
       0
     );
     setToezeggingenCount(
@@ -251,16 +288,12 @@ export default function DashboardPage() {
     : null;
   const trending = pctChange !== null && pctChange >= 0;
 
-  if (authLoading) {
-    return <main className="p-10" style={{ color: "var(--ink-muted)" }}>Laden...</main>;
-  }
-
   const today = new Date().toLocaleDateString("nl-NL", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
   return (
-    <AppShell>
+    <>
       {/* Header */}
       <header className="mb-8">
         <h1 className="font-serif text-[40px] font-normal leading-tight" style={{ color: "var(--ink)" }}>
@@ -586,6 +619,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </>
   );
 }

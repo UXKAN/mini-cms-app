@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toLocalISODate } from "./formatters";
 
 export type Period = {
   preset: "all" | "this-month" | "this-quarter" | "this-year" | "custom";
@@ -40,11 +41,13 @@ export type UseTableStateReturn<T> = {
 
 const DEFAULT_PERIOD: Period = { preset: "all" };
 
-function periodToRange(p: Period): { from: string | null; to: string | null } {
-  const now = new Date();
+export function periodToRange(
+  p: Period,
+  now: Date = new Date()
+): { from: string | null; to: string | null } {
   const y = now.getFullYear();
   const m = now.getMonth();
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const iso = toLocalISODate;
 
   switch (p.preset) {
     case "all":

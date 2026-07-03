@@ -41,7 +41,7 @@ import { ZeroResults } from "@/components/table/ZeroResults";
 import { TableLoadingState } from "@/components/table/LoadingState";
 import { StatCard } from "@/components/table/StatCard";
 import { exportCsv } from "../lib/exportCsv";
-import { fmtDate, fmtEuro, displayName } from "../lib/formatters";
+import { fmtDate, fmtEuro, displayName, toLocalISODate } from "../lib/formatters";
 import { Users, Trash2, Download, Eye, Pencil } from "lucide-react";
 
 const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
@@ -103,7 +103,6 @@ function MembershipTypeBadge({ type }: { type: string | null }) {
 }
 
 function MembersInner() {
-  const { user } = useAuth();
   const org = useOrg();
   const router = useRouter();
 
@@ -168,8 +167,8 @@ function MembersInner() {
   }, [org.id]);
 
   useEffect(() => {
-    if (user) fetchMembers();
-  }, [user, fetchMembers]);
+    fetchMembers();
+  }, [fetchMembers]);
 
   const openAdd = () => { setEditing(null); setModalMode("add"); };
   const openEdit = (m: Member) => { setEditing(m); setModalMode("edit"); };
@@ -199,7 +198,7 @@ function MembersInner() {
   };
 
   const handleExport = (rows: Member[]) => {
-    exportCsv(`leden-${new Date().toISOString().slice(0, 10)}`, rows, [
+    exportCsv(`leden-${toLocalISODate(new Date())}`, rows, [
       { key: "name", label: "Naam", get: (m) => displayName(m) },
       { key: "type", label: "Type", get: (m) => m.membership_type ?? "" },
       { key: "status", label: "Status", get: (m) => m.status },

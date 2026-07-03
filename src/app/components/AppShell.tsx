@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GiftFormDialog } from "./GiftFormDialog";
+import { LoadErrorState } from "./LoadErrorState";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
@@ -33,14 +34,18 @@ const nav = [
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, loading: authLoading } = useAuth();
-  const { org, loading: orgLoading } = useCurrentOrg(user);
+  const { user, loading: authLoading, error: authError, retry: retryAuth } = useAuth();
+  const { org, loading: orgLoading, error: orgError, retry: retryOrg } = useCurrentOrg(user);
   const [giftFormOpen, setGiftFormOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/login";
   };
+
+  if (authError || orgError) {
+    return <LoadErrorState onRetry={authError ? retryAuth : retryOrg} />;
+  }
 
   if (authLoading || orgLoading || !user) {
     return <main className="p-10 text-muted-foreground">Laden...</main>;

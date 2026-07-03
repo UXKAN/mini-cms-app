@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
+import { LoadErrorState } from "../components/LoadErrorState";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, error: authError, retry: retryAuth } = useAuth();
   const [name, setName] = useState("");
   const [rsin, setRsin] = useState("");
   const [saving, setSaving] = useState(false);
@@ -64,6 +65,10 @@ export default function OnboardingPage() {
     }
     router.replace("/dashboard");
   };
+
+  if (authError) {
+    return <LoadErrorState onRetry={retryAuth} />;
+  }
 
   if (authLoading || checking) {
     return <main style={{ padding: 40 }}>Laden...</main>;

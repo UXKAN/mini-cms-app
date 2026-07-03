@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
 import { useOrg } from "../lib/orgContext";
 import type {
@@ -44,12 +43,14 @@ import { ZeroResults } from "@/components/table/ZeroResults";
 import { TableLoadingState } from "@/components/table/LoadingState";
 import { StatCard } from "@/components/table/StatCard";
 import { exportCsv } from "../lib/exportCsv";
-import { fmtDate, fmtEuro } from "../lib/formatters";
+import { fmtDate, fmtEuro, toLocalISODate } from "../lib/formatters";
+import { remainingAmount, resolvePaymentStatus } from "../lib/payments";
+import { fetchPaidByKey } from "../lib/matchedDonations";
 import { HandshakeIcon, Trash2, Download, Eye, Pencil, CheckCircle, Mail } from "lucide-react";
 
 /* ─── helpers ─────────────────────────────────────── */
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => toLocalISODate(new Date());
 
 function memberLabel(
   m: Pick<Member, "name" | "first_name" | "last_name"> | null | undefined
@@ -116,6 +117,8 @@ type ToezeggingRow = {
   type: SourceType;
   id: string;
   amount: number;
+  /* som van al gekoppelde donaties — nodig om restbetalingen correct af te ronden */
+  paid_so_far: number;
   description: string | null;
   pledged_at: string | null;
   deadline: string | null;
@@ -154,7 +157,6 @@ export default function ToezeggingenPage() {
 }
 
 function ToezeggingenInner() {
-  const { user } = useAuth();
   const org = useOrg();
 
   const [rows, setRows] = useState<ToezeggingRow[]>([]);
@@ -185,7 +187,7 @@ function ToezeggingenInner() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [pledgesRes, agreementsRes, membersRes] = await Promise.all([
+    const [pledgesRes, agreementsRes, membersRes, matched] = await Promise.all([
       supabase
         .from("pledges")
         .select(
@@ -209,6 +211,7 @@ function ToezeggingenInner() {
         .eq("org_id", org.id)
         .order("last_name", { nullsFirst: false })
         .order("name"),
+      fetchPaidByKey(org.id),
     ]);
 
     if (pledgesRes.error) {
@@ -222,12 +225,22 @@ function ToezeggingenInner() {
       return;
     }
 
+    // Zonder deze check zouden alle paid_so_far stil op 0 terugvallen en
+    // toont de pagina te hoge openstaande bedragen.
+    if (matched.error) {
+      setError(matched.error);
+      setLoading(false);
+      return;
+    }
+    const paidByKey = matched.paidByKey;
+
     const pledgeRows: ToezeggingRow[] = (
       (pledgesRes.data ?? []) as PledgeFull[]
     ).map((p) => ({
       type: "pledge",
       id: p.id,
       amount: Number(p.amount),
+      paid_so_far: paidByKey.get(`pledge:${p.id}`) ?? 0,
       description: p.purpose ?? p.notes ?? null,
       pledged_at: p.pledged_at,
       deadline: p.deadline,
@@ -247,6 +260,7 @@ function ToezeggingenInner() {
       type: "gift_agreement",
       id: g.id,
       amount: Number(g.bedrag_eenmalig ?? 0),
+      paid_so_far: paidByKey.get(`gift_agreement:${g.id}`) ?? 0,
       description: g.purpose,
       pledged_at: g.akkoord_at ? g.akkoord_at.slice(0, 10) : null,
       deadline: null,
@@ -270,8 +284,8 @@ function ToezeggingenInner() {
   }, [org.id]);
 
   useEffect(() => {
-    if (user) fetchAll();
-  }, [user, fetchAll]);
+    fetchAll();
+  }, [fetchAll]);
 
   const openAddPledge = () => {
     setActiveRow(null);
@@ -351,7 +365,7 @@ function ToezeggingenInner() {
   };
 
   const handleExport = (exportRows: ToezeggingRow[]) => {
-    exportCsv(`toezeggingen-${new Date().toISOString().slice(0, 10)}`, exportRows, [
+    exportCsv(`toezeggingen-${todayIso()}`, exportRows, [
       { key: "type", label: "Type", get: (r) => r.source_label },
       { key: "donor", label: "Donateur", get: (r) => r.member_name },
       {
@@ -367,7 +381,10 @@ function ToezeggingenInner() {
   };
 
   /* stat-card metrics — always computed from full rows array */
-  const totalOpen = rows.reduce((s, r) => s + r.amount, 0);
+  const totalOpen = rows.reduce(
+    (s, r) => s + remainingAmount(r.amount, r.paid_so_far),
+    0
+  );
   const today = todayIso();
   const overdueCount = rows.filter(
     (r) => r.deadline && r.deadline < today
@@ -894,17 +911,34 @@ function MatchPaymentDialog({
   onClose: () => void;
   onMatched: () => void;
 }) {
-  const [amount, setAmount] = useState(row.amount.toString());
+  const restbedrag = remainingAmount(row.amount, row.paid_so_far);
+  // Altijd het restbedrag voorstellen — ook €0. Terugvallen op het volle
+  // bedrag zou bij een al gedekte toezegging tot dubbel innen uitnodigen.
+  const [amount, setAmount] = useState(restbedrag.toString());
   const [method, setMethod] = useState<DonationMethod>("bank");
   const [donatedAt, setDonatedAt] = useState(todayIso());
   const [description, setDescription] = useState(row.description ?? "");
   const [memberId, setMemberId] = useState(row.member_id ?? "");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Gezet zodra de donatie is aangemaakt. Faalt daarna de status-update, dan
+  // probeert een nieuwe submit alléén de update — anders ontstaat er bij elke
+  // retry een dubbele donatie.
+  const [insertedAmount, setInsertedAmount] = useState<number | null>(null);
+
+  // Sluiten nadat de donatie al is aangemaakt moet de lijst verversen: anders
+  // blijft paid_so_far stale en maakt heropenen + submit alsnog een duplicaat.
+  const handleClose = () => {
+    if (insertedAmount !== null) {
+      onMatched();
+    } else {
+      onClose();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amountNum = Number(amount);
+    const amountNum = insertedAmount ?? Number(amount);
     if (!amountNum || amountNum <= 0) {
       setFormError("Vul een geldig bedrag in.");
       return;
@@ -912,43 +946,53 @@ function MatchPaymentDialog({
     setSaving(true);
     setFormError(null);
 
-    const donationPayload: Record<string, unknown> = {
-      org_id: orgId,
-      member_id: memberId || null,
-      amount: amountNum,
-      method,
-      donated_at: donatedAt,
-      notes: description.trim() || null,
-      source: "manual",
-    };
-    if (row.type === "pledge") {
-      donationPayload.pledge_id = row.id;
-    } else {
-      donationPayload.gift_agreement_id = row.id;
+    if (insertedAmount === null) {
+      const donationPayload: Record<string, unknown> = {
+        org_id: orgId,
+        member_id: memberId || null,
+        amount: amountNum,
+        method,
+        donated_at: donatedAt,
+        notes: description.trim() || null,
+        source: "manual",
+      };
+      if (row.type === "pledge") {
+        donationPayload.pledge_id = row.id;
+      } else {
+        donationPayload.gift_agreement_id = row.id;
+      }
+
+      const { error: donationError } = await supabase
+        .from("donations")
+        .insert(donationPayload);
+      if (donationError) {
+        setSaving(false);
+        setFormError(donationError.message);
+        return;
+      }
+      setInsertedAmount(amountNum);
     }
 
-    const { error: donationError } = await supabase
-      .from("donations")
-      .insert(donationPayload);
-    if (donationError) {
-      setSaving(false);
-      setFormError(donationError.message);
-      return;
-    }
-
-    const fullyPaid = amountNum >= row.amount;
+    // Vergelijk met het restbedrag (eerdere betalingen tellen mee), niet met
+    // het volledige toezeggingsbedrag — anders blijft een restbetaling
+    // eeuwig op "Deels betaald" staan.
+    const fullyPaid =
+      resolvePaymentStatus(row.amount, row.paid_so_far, amountNum) === "paid";
     if (row.type === "pledge") {
-      const { error: updError } = await supabase
+      const { data: updated, error: updError } = await supabase
         .from("pledges")
         .update({ status: fullyPaid ? "paid" : "partial" })
-        .eq("id", row.id);
-      if (updError) {
+        .eq("id", row.id)
+        .select("id");
+      if (updError || !updated?.length) {
         setSaving(false);
-        setFormError(`Donatie geregistreerd, maar status-update faalde: ${updError.message}`);
+        setFormError(
+          `De donatie is al geregistreerd, maar de status-update faalde${updError ? `: ${updError.message}` : " (geen rijen bijgewerkt — controleer de database-policies)"}. Opnieuw indienen probeert alléén de status-update opnieuw; er wordt geen tweede donatie aangemaakt.`
+        );
         return;
       }
     } else {
-      const { error: updError } = await supabase
+      const { data: updated, error: updError } = await supabase
         .from("gift_agreements")
         .update({
           payment_status: fullyPaid ? "paid" : "partial",
@@ -956,10 +1000,13 @@ function MatchPaymentDialog({
             ? new Date(donatedAt + "T12:00:00Z").toISOString()
             : null,
         })
-        .eq("id", row.id);
-      if (updError) {
+        .eq("id", row.id)
+        .select("id");
+      if (updError || !updated?.length) {
         setSaving(false);
-        setFormError(`Donatie geregistreerd, maar status-update faalde: ${updError.message}`);
+        setFormError(
+          `De donatie is al geregistreerd, maar de status-update faalde${updError ? `: ${updError.message}` : " (geen rijen bijgewerkt — controleer de database-policies)"}. Opnieuw indienen probeert alléén de status-update opnieuw; er wordt geen tweede donatie aangemaakt.`
+        );
         return;
       }
     }
@@ -969,7 +1016,7 @@ function MatchPaymentDialog({
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Markeer als betaald</DialogTitle>
@@ -979,7 +1026,13 @@ function MatchPaymentDialog({
             Registreer een binnengekomen betaling voor deze {row.source_label.toLowerCase()}.
             Er wordt een donatie aangemaakt en de toezegging wordt automatisch op{" "}
             <strong>voldaan</strong> gezet (of <strong>deels betaald</strong> als
-            het bedrag lager is dan de toezegging).
+            het totaal nog onder het toegezegde bedrag blijft).
+            {row.paid_so_far > 0 && (
+              <>
+                {" "}Al betaald: <strong>{fmtEuro(row.paid_so_far)}</strong> van{" "}
+                {fmtEuro(row.amount)} — nog open: <strong>{fmtEuro(restbedrag)}</strong>.
+              </>
+            )}
           </p>
 
           <div className="grid grid-cols-2 gap-3">
@@ -993,6 +1046,7 @@ function MatchPaymentDialog({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
+                disabled={insertedAmount !== null}
                 className="h-10 text-sm"
               />
             </div>
@@ -1001,6 +1055,7 @@ function MatchPaymentDialog({
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value as DonationMethod)}
+                disabled={insertedAmount !== null}
                 className="h-10 px-3 text-sm rounded-md border border-input bg-transparent"
               >
                 <option value="bank">Bank</option>
@@ -1015,6 +1070,7 @@ function MatchPaymentDialog({
                 type="date"
                 value={donatedAt}
                 onChange={(e) => setDonatedAt(e.target.value)}
+                disabled={insertedAmount !== null}
                 className="h-10 text-sm"
               />
             </div>
@@ -1023,6 +1079,7 @@ function MatchPaymentDialog({
               <select
                 value={memberId}
                 onChange={(e) => setMemberId(e.target.value)}
+                disabled={insertedAmount !== null}
                 className="h-10 px-3 text-sm rounded-md border border-input bg-transparent"
               >
                 <option value="">— Anoniem —</option>
@@ -1038,6 +1095,7 @@ function MatchPaymentDialog({
               <Input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                disabled={insertedAmount !== null}
                 className="h-10 text-sm"
               />
             </div>
@@ -1046,11 +1104,15 @@ function MatchPaymentDialog({
           {formError && <p className="text-sm text-destructive">{formError}</p>}
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuleren
+            <Button type="button" variant="outline" onClick={handleClose}>
+              {insertedAmount !== null ? "Sluiten" : "Annuleren"}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Verwerken…" : "Donatie registreren"}
+              {saving
+                ? "Verwerken…"
+                : insertedAmount !== null
+                  ? "Status opnieuw bijwerken"
+                  : "Donatie registreren"}
             </Button>
           </div>
         </form>

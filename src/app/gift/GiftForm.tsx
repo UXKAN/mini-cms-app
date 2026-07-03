@@ -16,6 +16,7 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { OrgFooterCard } from "./_components/OrgFooterCard";
 import { ThankYou } from "./ThankYou";
 import { submitGiftAgreement, type GiftScenario } from "./actions";
+import { toLocalISODate } from "../lib/formatters";
 import {
   COUNTRIES,
   emptyGiftFormState,
@@ -27,7 +28,12 @@ import {
 type Errors = Partial<Record<keyof GiftFormState, string>>;
 
 export function GiftForm({ onClose }: { onClose?: () => void } = {}) {
-  const [form, setForm] = useState<GiftFormState>(emptyGiftFormState);
+  // Lazy initializer: de datum moet het moment van formulier-openen zijn, niet
+  // het moment waarop de module ooit geladen werd (tab die 's nachts openstaat).
+  const [form, setForm] = useState<GiftFormState>(() => ({
+    ...emptyGiftFormState,
+    ondertekening_datum: toLocalISODate(new Date()),
+  }));
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -70,28 +76,36 @@ export function GiftForm({ onClose }: { onClose?: () => void } = {}) {
       return;
     }
 
-    const result = await submitGiftAgreement(form);
+    try {
+      const result = await submitGiftAgreement(form);
 
-    if (!result.success) {
-      setSubmitError(result.error);
+      if (!result.success) {
+        setSubmitError(result.error);
+        return;
+      }
+
+      setSubmitted({
+        referenceCode: result.referenceCode,
+        email: form.schenker_email,
+        scenario: result.scenario,
+        mailWarning: result.mailWarning,
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      // Netwerkfout of onverwachte server-exception: zonder catch bleef de
+      // knop eeuwig op "Bezig met indienen…" staan en ging invoer verloren.
+      setSubmitError(
+        "Er ging iets mis bij het versturen. Controleer je internetverbinding en probeer het opnieuw — je invoer blijft bewaard."
+      );
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    setSubmitted({
-      referenceCode: result.referenceCode,
-      email: form.schenker_email,
-      scenario: result.scenario,
-      mailWarning: result.mailWarning,
-    });
-    setSubmitting(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handleReset() {
     setForm({
       ...emptyGiftFormState,
-      ondertekening_datum: new Date().toISOString().split("T")[0],
+      ondertekening_datum: toLocalISODate(new Date()),
     });
     setErrors({});
     setSubmitted(null);

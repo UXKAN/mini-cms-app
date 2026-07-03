@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState, use } from "react";
 import { supabase } from "../../lib/supabase";
-import { useAuth } from "../../lib/useAuth";
 import AppShell from "../../components/AppShell";
 import { useOrg } from "../../lib/orgContext";
 import type {
@@ -72,7 +71,6 @@ function MemberDetailInner({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { user } = useAuth();
   const org = useOrg();
 
   const [member, setMember] = useState<Member | null>(null);
@@ -83,7 +81,6 @@ function MemberDetailInner({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     (async () => {
       setLoading(true);
@@ -130,7 +127,7 @@ function MemberDetailInner({
     return () => {
       active = false;
     };
-  }, [user, id, org.id]);
+  }, [id, org.id]);
 
   if (loading) {
     return <p className="text-muted-foreground">Laden…</p>;

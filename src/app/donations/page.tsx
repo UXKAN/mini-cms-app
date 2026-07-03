@@ -37,7 +37,7 @@ import { ZeroResults } from "@/components/table/ZeroResults";
 import { TableLoadingState } from "@/components/table/LoadingState";
 import { StatCard } from "@/components/table/StatCard";
 import { exportCsv } from "../lib/exportCsv";
-import { fmtDate, fmtEuro, displayName } from "../lib/formatters";
+import { fmtDate, fmtEuro, displayName, toLocalISODate } from "../lib/formatters";
 import { HandCoins, Trash2, Download, Pencil } from "lucide-react";
 
 const METHOD_LABELS: Record<DonationMethod, string> = {
@@ -55,12 +55,11 @@ const METHOD_OPTIONS = [
   { value: "other", label: "Overig" },
 ];
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => toLocalISODate(new Date());
 
 type ModalMode = "closed" | "add" | "edit";
 
 function DonationsInner() {
-  const { user } = useAuth();
   const org = useOrg();
 
   const [donations, setDonations] = useState<DonationWithMember[]>([]);
@@ -113,7 +112,7 @@ function DonationsInner() {
     setLoading(false);
   }, [org.id]);
 
-  useEffect(() => { if (user) fetchAll(); }, [user, fetchAll]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const openAdd = () => { setEditing(null); setModalMode("add"); };
   const openEdit = (d: DonationWithMember) => { setEditing(d); setModalMode("edit"); };
@@ -154,7 +153,7 @@ function DonationsInner() {
   };
 
   const handleExport = (rows: DonationWithMember[]) => {
-    exportCsv(`donaties-${new Date().toISOString().slice(0, 10)}`, rows, [
+    exportCsv(`donaties-${todayIso()}`, rows, [
       { key: "donated_at", label: "Datum", get: (d) => d.donated_at },
       {
         key: "donor",
@@ -174,9 +173,7 @@ function DonationsInner() {
     ]);
   };
 
-  const yearStart = new Date(new Date().getFullYear(), 0, 1)
-    .toISOString()
-    .slice(0, 10);
+  const yearStart = `${new Date().getFullYear()}-01-01`;
   const yearTotal = donations
     .filter((d) => d.donated_at >= yearStart)
     .reduce((sum, d) => sum + Number(d.amount), 0);

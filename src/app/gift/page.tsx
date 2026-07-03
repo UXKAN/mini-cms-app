@@ -3,9 +3,14 @@
 import { useAuth } from "../lib/useAuth";
 import { GiftForm } from "./GiftForm";
 import { PublicHeader } from "./_components/PublicHeader";
+import { LoadErrorState } from "../components/LoadErrorState";
 
 export default function GiftPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, error, retry } = useAuth();
+
+  if (error) {
+    return <LoadErrorState onRetry={retry} />;
+  }
 
   if (loading || !user) {
     return null;
