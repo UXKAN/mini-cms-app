@@ -12,7 +12,38 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 
 ---
 
-## 2026-04-27 — A → C zonder B-tussenstap
+## 2026-07-16 — Eén codebase, twee domeinen via host-based middleware
+
+- **Beslissing:** Marketingsite en applicatie blijven in **één Next.js-project en één Vercel-deploy**, gescheiden op domein met `src/middleware.ts`:
+  - `mosqon.com` toont de marketingpagina op de **kale root** (`/`); de pagina leeft in de bestandsstructuur op `/home` en wordt via een rewrite als `/` getoond. App-routes op dit domein sturen door naar `app.mosqon.com`.
+  - `app.mosqon.com` toont de applicatie; marketing-URL's (`/`, `/privacy`, `/voorwaarden`) sturen door naar `mosqon.com`.
+  - Localhost/preview gedraagt zich als het marketingdomein voor `/`, zodat de kale-root-URL lokaal net zo werkt als live (de app is lokaal bereikbaar via `/login`, `/dashboard`, ...).
+  - Alle interne marketinglinks zijn root-relatief (`/#functies`, logo → `/`), zodat de schone URL blijft staan. Hosts instelbaar via `NEXT_PUBLIC_MARKETING_HOST` / `NEXT_PUBLIC_APP_HOST` (defaults kloppen voor productie); zie `integrations.md`.
+- **Waarom:** Een los marketingproject zou design-tokens en componenten dupliceren (eerder afgewezen, zie 2026-07-14). Host-based routing houdt site en app visueel één geheel en scheelt een tweede deploy. Kale root i.p.v. `/home` is een bewuste keuze van de eigenaar voor een schone URL.
+- **Neveneffect (opgelost):** de kale-root-test legde een bestaande scroll-bug bloot: deep-links naar `#anker` sprongen mis doordat de meeschalende mockups de paginahoogte ná de eerste render veranderen. `HashScroll` berekent nu de doelpositie zelf en stuurt bij tot de layout is uitgewerkt.
+- **Openstaand voor de eigenaar:** `mosqon.com` als apex-domein koppelen bij Cloud86 + in Vercel, en `NEXT_PUBLIC_SITE_URL=https://mosqon.com` zetten. Per-domein `robots.txt` is nu gedeeld (marketing-root indexeerbaar, app-routes disallowed); een strengere variant voor het app-subdomein kan later.
+- **Herzieningstrigger:** Als de app en marketing uit elkaar moeten groeien (aparte release-cadans, apart team), of als middleware-latency een probleem wordt.
+
+## 2026-07-15 — Prijsmodel: drie pakketten op functies, nooit op ledenaantal
+
+- **Beslissing:** Mosqon krijgt **drie pakketten die verschillen op functionaliteit**, met vaste bedragen op de marketingsite:
+  - **Donaties** — € 29/mnd (€ 290/jaar): donaties, toezeggingen, ANBI-formulier + jaaroverzicht, dashboard, Excel-import, e-mailsupport.
+  - **Compleet** — € 49/mnd (€ 490/jaar), "meest gekozen": + ledenadministratie, contributie, evenementen, ondernemers, rollen & rechten.
+  - **Compleet + automatisering** — € 89/mnd (€ 890/jaar): + Mosqon AI, betaal-matching, slimme herinneringen, bankkoppeling, iDEAL/collecte-QR/incasso.
+  - Jaarlijks vooruit = twee maanden gratis. Per organisatie, maandelijks opzegbaar. **Introductieaanbod:** inrichting en datamigratie gratis (tijdelijk, TODO in `PricingSection.tsx` + `nl.ts` markeert de plek).
+- **Waarom:** De eerdere staffel op ledenaantal (100/300) kwam uit de oorspronkelijke marketingbriefing en was nooit onderbouwd. Hij is verworpen omdat **ledenaantal de waarde niet meet**: een moskee kan Mosqon uitsluitend voor donaties gebruiken en dan nul leden invoeren. Daarnaast kent de code geen enkele limiet, plan of teller (geverifieerd: `organizations` heeft alleen id/name/rsin/created_at), dus een staffel zou handhaving vereisen voor een grens die niets zegt. "Geen limieten op leden of donaties, het hele bestuur zonder extra kosten" is nu juist een verkoopargument tegenover per-seat-concurrenten.
+- **Onderbouwing bedragen:** één vergeten toezegging is "direct verlies" (`vision.md:27`, voorbeeld € 500) en ANBI-verantwoording kost nu "dagen per jaar" (`vision.md:29`). € 49/mnd is met één geredde toezegging per jaar terugverdiend; bij ~100 donateurs à € 10/mnd is dat ~4% van de donatie-inkomsten, bij grotere moskeeën onder de 1%.
+- **Vervangt:** de regel "prijzen zijn 'Prijs op aanvraag'" uit de entry van 2026-07-14. Bedragen staan nu wél op de site.
+- **Bouwgevolg (nog niet gebouwd):** het pakket "Donaties" vereist dat de ledenmodule verborgen kan worden. Dat is nieuwbouw: er moet een `plan`-kolom op `organizations` komen plus navigatie-filtering. Leden/donaties/toezeggingen zijn in het dashboard verweven (één `Promise.all`), dus dit vraagt een eigen spec vóór de SaaS-sprong. Facturatie (Stripe) staat al op de SaaS-sprong-lijst (`roadmap.md:52`).
+- **Herzieningstrigger:** Bij de eerste tien betalende klanten (klopt de verdeling over de pakketten?), bij de bouw van de plan-handhaving, of als blijkt dat het "Donaties"-pakket kunstmatig aanvoelt en één prijs beter werkt.
+
+## 2026-07-14 — Marketing one-pager in (marketing) route group op /home
+
+- **Beslissing:** De marketingwebsite voor Mosqon leeft als **`(marketing)` route group in dit project** *(Next.js-map met haakjes: eigen layout, geen invloed op URL's)* op `/home`, plus `/privacy` en `/voorwaarden` als placeholder-pagina's. De root `/` blijft de bestaande auth-redirect; de domein-splitsing (mosqon.com → marketing, app.mosqon.com → app) volgt later via Vercel. Alle copy staat in `src/app/(marketing)/_content/nl.ts` met een typed contract (`types.ts`) als i18n-voorbereiding (TR/AR later, RTL-notities gedocumenteerd).
+  - **Inhoudelijk:** de site toont bewust de **volle vision** — incl. nog niet gebouwde features (ANBI-jaaroverzicht, automatische herinneringen, AI-assistent, betaal-matching, iDEAL/incasso/bankkoppeling/collecte-QR, evenementen, ondernemers, rollen & rechten). EU-datalocatie- en AVG-claims staan achter `enabled:false`-flags tot de hostingregio's geverifieerd zijn. Primaire CTA is "Plan een demo" (mailto + Calendly-placeholder); prijzen waren "Prijs op aanvraag" *(achterhaald: zie de entry van 2026-07-15, de site toont nu vaste bedragen)*.
+- **Waarom:** Route group erft automatisch de echte design-tokens, fonts en shadcn-componenten (site = app qua uitstraling), blijft één Vercel-deploy en dupliceert niets. Volle vision verkopen is een bewuste go-to-market-keuze van de eigenaar; de flags houden juridisch gevoelige claims tegen tot ze kloppen.
+- **Herzieningstrigger:** Vóór livegang van mosqon.com — dan heroverwegen welke vision-features de MVP al waarmaakt, prijzen invullen, EU/AVG-flags verifiëren en beslissen of marketing de root `/` overneemt.
+- **Aanvulling 2026-07-15 — doelgroep verbreed in marketingcopy:** De site richt zich niet meer uitsluitend op moskeeën, maar op "moskeeën en verenigingen" (o.a. Turkse en andere verenigingen/stichtingen). Framing in copy is gegeneraliseerd ("uw gemeenschap", "uw organisatie"); moskee-specifieke voorbeelden (vrijdaggebed, Ramadan, iftars, ANBI) blijven bewust staan als herkenbare niche-signalen. Tagline is nu "Digitaal beheer voor moskeeën en verenigingen". De features-sectie is tegelijk omgebouwd naar een bento-grid met zachte tinten en een prominent "Mosqon AI"-panel. Productnaam en app-copy zijn ongewijzigd.
 
 - **Beslissing:** Eerst eigen moskee compleet bouwen (fase A), daarna direct naar publieke SaaS (fase C). Geen B-tussenstap met 2-3 bevriende moskeeën.
 - **Waarom:** Eigen moskee is realistisch testterrein. B voegt complexiteit toe (handmatig accounts beheren) zonder de scope-keuzes voor SaaS te beantwoorden.

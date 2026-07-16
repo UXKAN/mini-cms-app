@@ -4,19 +4,19 @@ import "./globals.css";
 
 const dmSans = DM_Sans({
   variable: "--font-sans",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
 const dmSerif = DM_Serif_Display({
   variable: "--font-serif",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400"],
 });
 
 export const metadata: Metadata = {
-  title: "Mini CRM",
-  description: "Lichtgewicht CRM voor organisaties",
+  title: { default: "Mosqon", template: "%s · Mosqon" },
+  description: "Digitaal beheer voor moskeeën en verenigingen",
 };
 
 export const viewport = {

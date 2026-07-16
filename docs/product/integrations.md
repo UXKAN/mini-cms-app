@@ -29,9 +29,18 @@ npx vercel@52.2.1 env add <NAME> production --value "..." --yes
 | `RESEND_API_KEY` | Resend API key voor mail | Resend → API Keys |
 | `GIFT_FROM_EMAIL` | From-adres voor gift-bevestigingen, format: `Naam <gift@m.mosqon.com>` | handmatig samengesteld |
 | `GIFT_ORGANIZATION_ID` | UUID van de moskee in `organizations` tabel (optioneel, voor multi-tenant) | Supabase Studio → tabel `organizations` |
+| `NEXT_PUBLIC_SITE_URL` | Canonieke marketing-URL voor OG/JSON-LD/sitemap. Zet op `https://mosqon.com` | handmatig |
+| `NEXT_PUBLIC_MARKETING_HOST` | Host van de marketingsite (zonder protocol). Default `mosqon.com` | handmatig |
+| `NEXT_PUBLIC_APP_HOST` | Host van de applicatie (zonder protocol). Default `app.mosqon.com` | handmatig |
+
+**Domein-scheiding (één deploy, twee domeinen) via `src/middleware.ts`:**
+- `mosqon.com` → marketingsite op de kale root (`/`). App-routes (bijv. `/dashboard`) sturen door naar het app-domein.
+- `app.mosqon.com` → de applicatie. Marketing-URL's (`/`, `/privacy`, `/voorwaarden`) sturen door naar `mosqon.com`.
+- De marketingpagina's staan in de bestandsstructuur op `/home`; op het marketingdomein toont de middleware dat als `/`. `NEXT_PUBLIC_MARKETING_HOST` / `NEXT_PUBLIC_APP_HOST` hoeven alleen gezet als de domeinen afwijken van de defaults.
 
 **Custom domains gekoppeld aan project `mini-cms-app`:**
 - `app.mosqon.com` (production) — CNAME bij Cloud86 → `cname.vercel-dns.com`
+- `mosqon.com` (production, marketing) — nog koppelen: apex-domein bij Cloud86 (A-record → Vercel, of ANAME/ALIAS) + toevoegen in Vercel → Project → Domains
 - `mini-cms-app.vercel.app` (Vercel default)
 
 **Bekende beperkingen:**

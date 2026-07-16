@@ -1,0 +1,122 @@
+/* Alleen geladen op (marketing)-routes; raakt de app-schermen niet. */
+
+/* Smooth scroll voor ankernavigatie — alleen als de bezoeker geen
+   reduced-motion voorkeur heeft, en alleen wanneer de marketing-wrapper
+   in de DOM staat (app-routes blijven onaangetast). */
+@media (prefers-reduced-motion: no-preference) {
+  html:has([data-marketing-root]) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Scroll-reveal. De verbergende beginstaat staat achter (scripting: enabled):
+   zonder JavaScript (of in oudere browsers die deze query niet kennen) wordt
+   content dus nooit verborgen. */
+@media (scripting: enabled) {
+  .mk-reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s ease;
+  }
+
+  .mk-reveal.mk-revealed {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Toetsenbordfocus mag nooit op onzichtbare content landen: focus in een
+     nog niet gerevealde sectie maakt hem direct zichtbaar. */
+  .mk-reveal:focus-within {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Inteken-animaties: voortgangsbalken en grafieklijnen tekenen zich in
+     zodra hun sectie revealt. Zonder JS of met reduced-motion staan ze
+     gewoon vol getekend (de beginstaat geldt alleen hierbinnen). */
+  @media (prefers-reduced-motion: no-preference) {
+    .mk-reveal .mk-bar {
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+    }
+
+    .mk-reveal.mk-revealed .mk-bar {
+      transform: scaleX(1);
+      transition: transform 0.9s ease 0.25s;
+    }
+
+    .mk-reveal .mk-draw {
+      stroke-dasharray: 1200;
+      stroke-dashoffset: 1200;
+    }
+
+    .mk-reveal.mk-revealed .mk-draw {
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1.3s ease 0.25s;
+    }
+
+    .mk-reveal .mk-fill {
+      opacity: 0;
+    }
+
+    .mk-reveal.mk-revealed .mk-fill {
+      opacity: 1;
+      transition: opacity 0.7s ease 0.9s;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mk-reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+}
+
+/* Subtiele hover-lift voor kaarten — alleen op hover-capable devices. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .mk-lift {
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .mk-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Zachte binnenkomer voor tab-panelen (client-side gewisseld). */
+@media (prefers-reduced-motion: no-preference) {
+  .mk-panel-in {
+    animation: mk-panel-in 0.35s ease;
+  }
+
+  @keyframes mk-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+}
+
+/* Geanimeerde underline voor tekstlinks in lopende tekst. */
+.mk-link {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.mk-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mk-link {
+    transition: text-decoration-thickness 0.15s ease;
+  }
+}
