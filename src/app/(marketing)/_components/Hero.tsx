@@ -24,7 +24,7 @@ function sparkPath() {
 export function Hero({ content }: Props) {
   const spark = sparkPath();
   return (
-    <section id="top" className="relative overflow-hidden">
+    <section id="top" className="relative -mt-24 overflow-hidden pt-24">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-[580px] bg-gradient-to-b from-accent-light/70 via-accent-light/25 to-transparent"

@@ -1,4 +1,14 @@
-import { Check, FileSpreadsheet, UserPlus } from "lucide-react";
+import {
+  Cast,
+  Check,
+  CreditCard,
+  FileSpreadsheet,
+  HandCoins,
+  Link2,
+  MonitorPlay,
+  ShieldCheck,
+  UserPlus,
+} from "lucide-react";
 import type { MarketingContent } from "../_content/types";
 import { SectionHeading } from "./SectionHeading";
 import { Reveal } from "./Reveal";
@@ -38,21 +48,101 @@ function StepVisual({ step }: { step: number }) {
       </div>
     );
   }
-  return (
-    <div className="flex h-full flex-col justify-center gap-2.5 p-4">
-      <div className="flex -space-x-1.5">
-        {["AY", "FD", "SB"].map((initials) => (
-          <span
-            key={initials}
-            className="grid h-7 w-7 place-items-center rounded-full border-2 border-card bg-accent-light text-[8px] font-bold text-accent-dark"
-          >
-            {initials}
+  if (step === 2) {
+    return (
+      <div className="flex h-full flex-col justify-center gap-2 p-4">
+        <div className="flex items-center gap-1.5">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-light text-accent-dark">
+            <CreditCard className="h-3.5 w-3.5" strokeWidth={2} />
           </span>
-        ))}
+          <Link2
+            className="h-3 w-3 shrink-0 text-muted-foreground"
+            strokeWidth={2}
+          />
+          {["Mollie", "Stripe"].map((name) => (
+            <span
+              key={name}
+              className="rounded-full border bg-card px-2 py-0.5 text-[9px] font-medium text-foreground"
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+        <div className="h-2 w-28 rounded-full bg-muted" />
+        <p className="flex items-center gap-1 text-[9px] text-muted-foreground">
+          <Check
+            className="h-3 w-3 shrink-0 text-[var(--success)]"
+            strokeWidth={2.5}
+          />
+          Betaling van € 25,00 automatisch verwerkt
+        </p>
       </div>
-      <p className="flex items-center gap-1 text-[9px] text-muted-foreground">
-        <Check className="h-3 w-3 text-[var(--success)]" strokeWidth={2.5} />
-        Donatie geregistreerd door commissielid
+    );
+  }
+  if (step === 3) {
+    return (
+      <div className="flex h-full flex-col justify-center gap-2.5 p-4">
+        <div className="flex -space-x-1.5">
+          {["AY", "FD", "SB"].map((initials) => (
+            <span
+              key={initials}
+              className="grid h-7 w-7 place-items-center rounded-full border-2 border-card bg-accent-light text-[8px] font-bold text-accent-dark"
+            >
+              {initials}
+            </span>
+          ))}
+        </div>
+        <p className="flex items-center gap-1 text-[9px] text-muted-foreground">
+          <Check className="h-3 w-3 text-[var(--success)]" strokeWidth={2.5} />
+          Donatie geregistreerd door commissielid
+        </p>
+      </div>
+    );
+  }
+  if (step === 4) {
+    return (
+      <div className="flex h-full flex-col justify-center gap-2.5 p-4">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-light text-accent-dark">
+            <HandCoins className="h-3.5 w-3.5" strokeWidth={2} />
+          </span>
+          <span className="flex items-center gap-1 whitespace-nowrap rounded-full border bg-card px-2 py-1 text-[9px] font-medium text-foreground">
+            <Link2
+              className="h-3 w-3 text-muted-foreground"
+              strokeWidth={2}
+            />
+            Eenmalige link
+            <span className="hidden lg:inline"> · Collecte</span>
+          </span>
+          <ShieldCheck
+            className="h-3.5 w-3.5 shrink-0 text-accent-dark"
+            strokeWidth={2}
+          />
+        </div>
+        <p className="text-[9px] text-muted-foreground">
+          Opgehaald door Yusuf: € 182,50
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-full flex-col justify-center gap-2 p-4">
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-light text-accent-dark">
+          <MonitorPlay className="h-3.5 w-3.5" strokeWidth={2} />
+        </span>
+        <span className="relative flex h-12 w-24 items-end gap-1 rounded-md border bg-card px-2.5 pb-2">
+          <Cast
+            className="absolute right-1.5 top-1.5 h-2.5 w-2.5 text-muted-foreground"
+            strokeWidth={2}
+          />
+          <span className="h-3 w-2.5 rounded-sm bg-primary/60" />
+          <span className="h-5 w-2.5 rounded-sm bg-primary/80" />
+          <span className="h-7 w-2.5 rounded-sm bg-primary" />
+        </span>
+      </div>
+      <p className="text-[9px] text-muted-foreground">
+        Gedeeld via link · live op het scherm in de moskee
       </p>
     </div>
   );
@@ -70,10 +160,13 @@ export function HowItWorks({ content }: Props) {
           title={content.title}
           intro={content.intro}
         />
-        <ol role="list" className="mt-14 grid list-none gap-5 md:grid-cols-3">
+        <ol
+          role="list"
+          className="mt-14 grid list-none gap-5 sm:grid-cols-2 md:grid-cols-3"
+        >
           {content.steps.map((step, i) => (
             <li key={step.title} className="h-full">
-              <Reveal delay={i * 100} className="h-full">
+              <Reveal delay={(i % 3) * 100} className="h-full">
                 <div
                   className="mk-lift flex h-full flex-col rounded-2xl border bg-card p-6"
                   style={{ boxShadow: "var(--shadow)" }}

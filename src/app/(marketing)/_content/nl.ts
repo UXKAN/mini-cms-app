@@ -224,7 +224,7 @@ export const nl = {
     eyebrow: "Hoe het werkt",
     title: "Binnen een dag aan de slag",
     intro:
-      "Geen ingewikkelde installatie of trainingen. Drie stappen en uw organisatie werkt in Mosqon.",
+      "Geen ingewikkelde installatie of trainingen. De inrichting doet u samen met ons op één dag, daarna is alles goed geregeld: van de collecte op vrijdag tot de cijfers voor uw gemeenschap.",
     steps: [
       {
         title: "Meld uw organisatie aan",
@@ -235,8 +235,20 @@ export const nl = {
         body: "Heeft u al een ledenlijst? Die zet u in een paar stappen over, en u ziet precies wat er is overgenomen. Nog geen lijst? Dan begint u gewoon in Mosqon zelf.",
       },
       {
+        title: "Koppel uw betaalsystemen",
+        body: "Verbind Mosqon met betaalsystemen zoals Mollie, Stripe of Pay. Ook uw boekhoudprogramma kan gekoppeld worden. Zo komen online betalingen en contant geld samen in één overzicht, zonder zoeken op verschillende websites.",
+      },
+      {
         title: "Beheer met het hele bestuur",
-        body: "Iedereen werkt in hetzelfde overzicht: leden, donaties en toezeggingen, altijd actueel.",
+        body: "Iedereen werkt in hetzelfde overzicht: leden, donaties en toezeggingen, altijd actueel. Wat er via de koppelingen binnenkomt, staat er direct bij.",
+      },
+      {
+        title: "Geef vrijwilligers een veilige link",
+        body: "Gaat een vrijwilliger op pad voor de collecte of ledenwerving? Stuur een veilige link die maar één keer werkt. U ziet precies wie wat heeft opgehaald, en er raakt geen briefje meer kwijt.",
+      },
+      {
+        title: "Deel de cijfers met uw gemeenschap",
+        body: "Laat uw gemeenschap zien wat er met donaties gebeurt. Deel de cijfers veilig via een link met bestuursleden, commissies en leden, of toon ze op een scherm in de moskee of vereniging.",
       },
     ],
   },

@@ -51,7 +51,8 @@ export function middleware(request: NextRequest) {
   const isLocal =
     host === "localhost" ||
     host === "127.0.0.1" ||
-    host.endsWith(".local");
+    host.endsWith(".local") ||
+    process.env.VERCEL_ENV === "preview";
   const isAppHost = host === APP_HOST;
   const isMarketingHost =
     host === MARKETING_HOST || host === `www.${MARKETING_HOST}`;

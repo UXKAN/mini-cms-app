@@ -13,7 +13,7 @@ export function MarketingFooter({ content, navLinks, contactEmail }: Props) {
     "mk-link text-sm text-background/80 hover:text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/60 rounded-sm";
 
   return (
-    <footer className="mt-24 bg-foreground text-background">
+    <footer className="bg-foreground text-background">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <MosqonLogo className="h-6 w-auto text-background" />
