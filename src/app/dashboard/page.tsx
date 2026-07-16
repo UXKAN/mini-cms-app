@@ -363,7 +363,7 @@ function DashboardInner() {
             {/* Right: year total */}
             <div className="text-right">
               <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-                Jaar tot nu
+                Dit jaar
               </div>
               <div className="font-serif text-[32px] leading-none" style={{ color: "var(--ink)" }}>
                 {loading ? "…" : formatEuro(yearTotal)}

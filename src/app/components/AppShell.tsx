@@ -73,7 +73,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   Nieuwe Moskee
                 </div>
                 <div className="text-[9px] text-muted-foreground tracking-widest uppercase mt-0.5">
-                  ANBI Dashboard
+                  ANBI-dashboard
                 </div>
               </div>
             </div>
