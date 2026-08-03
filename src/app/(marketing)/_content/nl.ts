@@ -39,7 +39,7 @@ export const nl = {
     claims: [
       "Leden, donaties en toezeggingen in één systeem",
       "Ledenlijst overzetten met controlerapport",
-      "Ontstaan in de bestuurskamer van een moskee",
+      "Gebouwd voor de praktijk van uw bestuur",
     ],
   },
 
