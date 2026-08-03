@@ -207,3 +207,10 @@ Een chronologische lijst van belangrijke product- en architectuurkeuzes. **Doel:
 - **Beslissing:** Volgende categorieën zijn definitief geen doel: boekhouding, publieke website/CMS, publieke event-ticketing, gebedstijden/Quran-features, e-mail-marketing, multi-vestiging-per-account, native mobiele app voor leden.
 - **Waarom:** Andere tools doen dit beter. Scope-discipline.
 - **Herzieningstrigger:** Geen — deze blijven uit. Zie `vision.md` voor de volledige redenering.
+
+## 2026-07-16 — Marketingsite toont volledige visie; niet-geplande beloftes vastgelegd in roadmap
+
+- **Beslissing:** De marketingsite (one-pager, branch `claude/admiring-grothendieck-ac213e`) presenteert bewust de volledige productvisie als bestaand product, zonder "binnenkort"-labels. Een gap-analyse (site-copy vs. roadmap/mvp-scope) leverde 9 site-beloftes op die nergens gepland stonden; die zijn toegevoegd aan `roadmap.md` onder "SaaS-sprong → Site-beloftes, nog in te plannen": Mollie-koppeling, boekhoudprogramma-koppeling, bankkoppeling (afschriften inlezen), automatische betaal-matching, automatische incasso, iDEAL-betaallinks per toezegging/contributie, eenmalige vrijwilligerslinks met attributie, Turkse/Arabische versie, contributie-beheer. Daarnaast zijn 5 timing-mismatches genoteerd (rollen-UI, Mosqon AI, automatische reminders, evenementen, publieke /gift-flow): al gepland, maar de site belooft ze eerder of breder.
+  - **Bewust níét opgenomen** in de planning: collecte-QR en publiek cijfers delen/casten op schermen (keuze eigenaar, 2026-07-16).
+- **Waarom:** De site is pre-launch marketing en verkoopt de eindstaat (eerdere keuze eigenaar: nieuwe "Hoe het werkt"-stappen als gewone stappen tonen, geen "binnenkort"-badges). Zonder vastlegging raakt de planning uit de pas met wat prospects te zien krijgen; demo-gesprekken zijn dan het enige vangnet.
+- **Herzieningstrigger:** Bij de eerste betalende of serieuze demo-klant elke site-belofte herijken: bouwen (inplannen), van de site halen, of een "binnenkort"-label geven.

@@ -66,6 +66,22 @@ In deze volgorde — elk onderdeel krijgt eigen brainstorm → spec → plan →
 - Wachtwoord-resetmail-deliverability (DNS, SPF, DKIM, DMARC) op `m.mosqon.com`
 - Eerste betalende moskee onboarden + support-kanaal opzetten
 
+#### Site-beloftes, nog in te plannen (bron: marketingsite 2026-07)
+
+De marketingsite *(branch `claude/admiring-grothendieck-ac213e`)* toont bewust de volledige visie. Deze beloftes stonden nog nergens in de planning en zijn hier vastgelegd zodat de roadmap dekt wat de site zegt (zie `decisions.md` 2026-07-16):
+
+- **Mollie-koppeling** *(Hoe-het-werkt stap 3)* — naast Stripe en Pay.nl
+- **Boekhoudprogramma-kóppeling** *(Hoe-het-werkt stap 3)* — verder dan de huidige "wij exporteren ernaartoe"-lijn; scope bepalen vóór bouwen
+- **Bankkoppeling: afschriften automatisch inlezen** *(prijstabel tier 3)* — datamodel heeft alleen een MT940-dedup-index
+- **Automatische betaal-matching** *(prijstabel tier 3 + Functies)* — matching-kolommen bestaan (migratie 008), de automatiek nog niet; matching is nu handmatig "Markeer als betaald"
+- **Automatische incasso voor periodieke giften** *(prijstabel tier 3)*
+- **iDEAL-betaallinks per toezegging/contributie** *(prijstabel tier 3)* — concretisering van de Pay.nl-integratie
+- **Eenmalige veilige vrijwilligerslinks** met inzicht wie wat ophaalde *(Hoe-het-werkt stap 5)* — raakt aan cashgeld-formulier + share-pattern, maar eenmalige links + attributie is eigen werk
+- **Turkse en Arabische versie** *(FAQ + footer: "in voorbereiding")* — i18n-aanpak nog volledig te bepalen
+- **Contributie-beheer** *(Compleet-tier)* — meer dan het huidige maandbedrag-veld op leden: inning, status, herinneringen
+
+*Timing-mismatches, al wél gepland maar de site belooft ze eerder of breder: rollen & rechten-UI (site: Compleet-tier; planning: Post-SaaS), Mosqon AI als algemene vraagbaak (planning: LATER, smalle scope), automatische reminders (tier 3; planning: Post-SaaS cron), evenementen (Compleet-tier; planning: SaaS-fase), publieke /gift-flow (site suggereert publiek; staat bewust achter login, decision 2026-05-02). Bewust níét opgenomen: collecte-QR en publiek cijfers delen/casten op schermen.*
+
 ### Post-SaaS (geparkeerd, niet vergeten)
 - Audit log (wie deed wat, wanneer) — wordt verplicht zodra meerdere moskeeën erop zitten
 - AVG-export-knoppen voor leden ("alles over mij")
