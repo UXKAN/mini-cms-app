@@ -29,12 +29,10 @@ export function TableStatusFilter({
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
+        aria-label={`${labelPrefix}: ${current?.label ?? "Alle"}`}
         className={`w-auto min-w-[180px] rounded-[10px] border-0 bg-[var(--surface-zone)] ${className}`}
       >
-        <SelectValue
-          placeholder={labelPrefix}
-          aria-label={`${labelPrefix}: ${current?.label ?? "alle"}`}
-        >
+        <SelectValue placeholder={labelPrefix}>
           <span className="text-muted-foreground">{labelPrefix}: </span>
           <span>{current?.label ?? "Alle"}</span>
         </SelectValue>
