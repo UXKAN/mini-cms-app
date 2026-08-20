@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
+import { PageHeader } from "../components/PageHeader";
 import { useOrg } from "../lib/orgContext";
 import type { DonationMethod, DonationWithMember, Member } from "../lib/types";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,17 @@ import { TableLoadingState } from "@/components/table/LoadingState";
 import { StatCard } from "@/components/table/StatCard";
 import { exportCsv } from "../lib/exportCsv";
 import { fmtDate, fmtEuro, displayName, toLocalISODate } from "../lib/formatters";
-import { HandCoins, Trash2, Download, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import {
+  HandCoins,
+  Trash2,
+  Download,
+  Pencil,
+  Landmark,
+  Globe,
+  CircleEllipsis,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 const METHOD_LABELS: Record<DonationMethod, string> = {
   cash: "Contant",
@@ -55,9 +66,33 @@ const METHOD_OPTIONS = [
   { value: "other", label: "Overig" },
 ];
 
+const METHODE_CHIP: Record<string, { label: string; Icon: LucideIcon }> = {
+  cash: { label: "Contant", Icon: HandCoins },
+  bank: { label: "Bank", Icon: Landmark },
+  online: { label: "Online", Icon: Globe },
+  other: { label: "Overig", Icon: CircleEllipsis },
+};
+
+const COL_HEAD =
+  "text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+const CELL = "px-4 py-3.5";
+
 const todayIso = () => toLocalISODate(new Date());
 
 type ModalMode = "closed" | "add" | "edit";
+
+function MethodChip({ method }: { method: string }) {
+  const chip = METHODE_CHIP[method];
+  if (!chip) {
+    return <span className="text-sm text-muted-foreground">{method}</span>;
+  }
+  const { label, Icon } = chip;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-zone)] px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+      <Icon size={12} /> {label}
+    </span>
+  );
+}
 
 function DonationsInner() {
   const org = useOrg();
@@ -149,6 +184,9 @@ function DonationsInner() {
     }
     t.clearSelection();
     setConfirmState(null);
+    toast.success(
+      ids.length === 1 ? "Donatie verwijderd" : `${ids.length} donaties verwijderd`
+    );
     await fetchAll();
   };
 
@@ -181,29 +219,26 @@ function DonationsInner() {
 
   return (
     <>
-      <div className="flex justify-between items-end mb-7 gap-4 flex-wrap">
-        <div>
-          <h1 className="font-serif text-4xl font-normal text-foreground">
-            Donaties
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Registreer donaties en koppel ze optioneel aan een lid.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Donaties"
+        subtitle={
+          loading
+            ? "Laden…"
+            : `${donations.length} donaties · ${fmtEuro(total)} totaal`
+        }
+      >
+        <Button onClick={openAdd}>Donatie toevoegen</Button>
+      </PageHeader>
 
       {error && (
-        <div
-          className="p-3 rounded-[7px] mb-4 text-sm"
-          style={{ background: "var(--error-light)", color: "var(--error)" }}
-        >
+        <div className="mb-4 rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       {!t.isEmpty && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <StatCard label="Totaal dit jaar" value={fmtEuro(yearTotal)} />
+          <StatCard featured label="Totaal dit jaar" value={fmtEuro(yearTotal)} />
           <StatCard label="Totaal (alles)" value={fmtEuro(total)} />
           <StatCard label="Aantal donaties" value={String(donations.length)} />
         </div>
@@ -234,7 +269,6 @@ function DonationsInner() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button onClick={openAdd}>Donatie toevoegen</Button>
           </>
         }
       />
@@ -256,10 +290,7 @@ function DonationsInner() {
       ) : t.isFilteredEmpty ? (
         <ZeroResults onClearFilters={t.resetFilters} />
       ) : (
-        <div
-          className="rounded-[10px] border border-border overflow-hidden"
-          style={{ background: "var(--surface)" }}
-        >
+        <div className="overflow-hidden rounded-lg bg-card shadow-[var(--shadow)]">
           <Table>
             <TableHeader>
               <TableRow>
@@ -271,11 +302,15 @@ function DonationsInner() {
                     ariaLabel={`Selecteer alle ${t.filteredItems.length} zichtbare donaties`}
                   />
                 </TableHead>
-                <TableHead>Datum</TableHead>
-                <TableHead>Donateur</TableHead>
-                <TableHead>Bedrag</TableHead>
-                <TableHead>Methode</TableHead>
-                <TableHead>Omschrijving</TableHead>
+                <TableHead className={`${COL_HEAD} hidden sm:table-cell`}>
+                  Datum
+                </TableHead>
+                <TableHead className={COL_HEAD}>Donateur</TableHead>
+                <TableHead className={`${COL_HEAD} text-right`}>Bedrag</TableHead>
+                <TableHead className={COL_HEAD}>Methode</TableHead>
+                <TableHead className={`${COL_HEAD} hidden md:table-cell`}>
+                  Omschrijving
+                </TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -285,7 +320,7 @@ function DonationsInner() {
                   key={d.id}
                   data-state={t.selectedKeys.has(d.id) ? "selected" : undefined}
                 >
-                  <TableCell>
+                  <TableCell className={CELL}>
                     <RowSelectCheckbox
                       checked={t.selectedKeys.has(d.id)}
                       onChange={() => t.toggleRow(d.id)}
@@ -296,26 +331,34 @@ function DonationsInner() {
                       }`}
                     />
                   </TableCell>
-                  <TableCell>{fmtDate(d.donated_at)}</TableCell>
-                  <TableCell>
+                  <TableCell
+                    className={`${CELL} hidden sm:table-cell text-muted-foreground`}
+                  >
+                    {fmtDate(d.donated_at)}
+                  </TableCell>
+                  <TableCell className={`${CELL} text-[13px] font-semibold text-foreground`}>
                     {d.member ? (
                       displayName(d.member)
                     ) : d.gift_agreement?.schenker_naam ? (
                       d.gift_agreement.schenker_naam
                     ) : (
-                      <span className="text-muted-foreground italic">
+                      <span className="font-normal italic text-muted-foreground">
                         Anoniem
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="font-semibold">
+                  <TableCell className={`${CELL} text-right font-semibold text-primary`}>
                     {fmtEuro(Number(d.amount))}
                   </TableCell>
-                  <TableCell>{METHOD_LABELS[d.method]}</TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className={CELL}>
+                    <MethodChip method={d.method} />
+                  </TableCell>
+                  <TableCell
+                    className={`${CELL} hidden md:table-cell text-muted-foreground`}
+                  >
                     {d.notes ?? "—"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className={CELL}>
                     <RowActionsMenu
                       actions={[
                         {
@@ -384,7 +427,7 @@ function DonationsInner() {
       >
         <DialogContent className="max-w-[520px]">
           <DialogHeader>
-            <DialogTitle className="font-serif font-normal text-xl">
+            <DialogTitle>
               {modalMode === "edit" ? "Donatie bewerken" : "Nieuwe donatie"}
             </DialogTitle>
           </DialogHeader>
@@ -453,7 +496,11 @@ function DonationForm({
           .insert({ ...payload, user_id: user.id, org_id: org.id });
 
     if (error) { setFormError(error.message); setSaving(false); }
-    else { setSaving(false); await onSaved(); }
+    else {
+      setSaving(false);
+      toast.success("Donatie opgeslagen");
+      await onSaved();
+    }
   };
 
   const selectCls =
@@ -522,10 +569,7 @@ function DonationForm({
       </div>
 
       {formError && (
-        <div
-          className="p-3 rounded-[7px] text-sm"
-          style={{ background: "var(--error-light)", color: "var(--error)" }}
-        >
+        <div className="rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
           {formError}
         </div>
       )}
@@ -535,7 +579,7 @@ function DonationForm({
           Annuleren
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
+          {saving ? "Opslaan…" : initial ? "Opslaan" : "Toevoegen"}
         </Button>
       </div>
     </form>
