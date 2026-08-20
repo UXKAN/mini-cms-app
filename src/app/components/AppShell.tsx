@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -41,6 +41,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { org, loading: orgLoading, error: orgError, retry: retryOrg } = useCurrentOrg(user);
   const [giftFormOpen, setGiftFormOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -52,12 +54,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
 
+    const menuButton = menuButtonRef.current;
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      menuButton?.focus();
     };
   }, [mobileNavOpen]);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    const closeOnDesktop = () => {
+      if (desktopQuery.matches) setMobileNavOpen(false);
+    };
+    closeOnDesktop();
+    desktopQuery.addEventListener("change", closeOnDesktop);
+    return () => desktopQuery.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -89,6 +104,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Link
         key={href}
         href={href}
+        aria-current={active ? "page" : undefined}
         onClick={() => setMobileNavOpen(false)}
         className={[
           "flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[13px] font-medium no-underline transition-colors",
@@ -105,6 +121,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // Bewust stateless: dit blok wordt tegelijk gemount in twee subtrees (desktop-aside + mobiele drawer).
   const sidebarInner = (
     <>
       <div className="px-4 pb-4 pt-6">
@@ -183,13 +200,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           {/* ── Mobiel: topbalk ── */}
           <header className="sticky top-0 z-40 flex h-14 items-center gap-3 bg-background/95 px-4 backdrop-blur md:hidden">
-            <button
+            <Button
+              ref={menuButtonRef}
+              variant="ghost"
+              size="icon"
               aria-label="Menu openen"
+              aria-expanded={mobileNavOpen}
+              aria-controls="mobiel-menu"
               onClick={() => setMobileNavOpen(true)}
-              className="grid h-10 w-10 place-items-center rounded-[10px] bg-[var(--surface-zone)] text-foreground"
+              className="shrink-0 rounded-[10px] bg-[var(--surface-zone)] text-foreground [&_svg]:size-[18px]"
             >
-              <Menu size={18} />
-            </button>
+              <Menu />
+            </Button>
             <div className="min-w-0 flex-1 truncate text-[15px] font-bold text-foreground">
               {org.name}
             </div>
@@ -206,15 +228,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 className="absolute inset-0 bg-[oklch(0.22_0.015_170/0.35)]"
                 onClick={() => setMobileNavOpen(false)}
               />
-              <aside className="absolute inset-y-0 left-0 flex w-[264px] flex-col bg-[var(--surface-zone)] shadow-[var(--shadow-lg)]">
+              <aside
+                id="mobiel-menu"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Navigatie"
+                className="absolute inset-y-0 left-0 flex w-[264px] flex-col bg-[var(--surface-zone)] shadow-[var(--shadow-lg)]"
+              >
                 <div className="flex justify-end px-3 pt-3">
-                  <button
+                  <Button
+                    ref={closeButtonRef}
+                    variant="ghost"
+                    size="icon"
                     aria-label="Menu sluiten"
                     onClick={() => setMobileNavOpen(false)}
-                    className="grid h-10 w-10 place-items-center rounded-[10px] bg-card text-foreground shadow-[var(--shadow)]"
+                    className="shrink-0 rounded-[10px] bg-card text-foreground shadow-[var(--shadow)] [&_svg]:size-[18px]"
                   >
-                    <X size={18} />
-                  </button>
+                    <X />
+                  </Button>
                 </div>
                 {sidebarInner}
               </aside>
