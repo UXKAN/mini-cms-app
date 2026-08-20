@@ -18,7 +18,7 @@ import { AlertTriangle } from "lucide-react";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => Promise<void> | void;
+  onConfirm: () => Promise<boolean | void> | boolean | void;
   mode: "standard" | "financial";
   title: string;
   description: string;
@@ -45,8 +45,8 @@ export function ConfirmDeleteDialog({
   const handleConfirm = async () => {
     setState((prev) => ({ ...prev, busy: true }));
     try {
-      await onConfirm();
-      onOpenChange(false);
+      const result = await onConfirm();
+      if (result !== false) onOpenChange(false);
     } finally {
       setState((prev) => ({ ...prev, busy: false }));
     }

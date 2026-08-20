@@ -180,7 +180,7 @@ function DonationsInner() {
       .in("id", ids);
     if (delError) {
       setError(delError.message);
-      return;
+      return false;
     }
     t.clearSelection();
     setConfirmState(null);

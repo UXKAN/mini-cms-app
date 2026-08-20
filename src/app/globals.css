@@ -93,7 +93,7 @@
   --surface: var(--card);
   --ink: var(--foreground);
   --ink-muted: var(--muted-foreground);
-  --ink-subtle: oklch(0.68 0.01 65); /* geen shadcn-equivalent, eigen tint */
+  --ink-subtle: oklch(0.55 0.012 170); /* geen shadcn-equivalent, eigen tint */
   --accent: var(--primary);
   --error: var(--destructive);
   --border-focus: var(--ring);

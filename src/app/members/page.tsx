@@ -43,6 +43,7 @@ import { StatCard } from "@/components/table/StatCard";
 import { exportCsv } from "../lib/exportCsv";
 import { fmtDate, fmtEuro, displayName, initials, toLocalISODate } from "../lib/formatters";
 import { Users, Trash2, Download, Eye, Pencil } from "lucide-react";
+import { toast } from "sonner";
 
 const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
   { value: "active", label: "Actief" },
@@ -197,10 +198,13 @@ function MembersInner() {
     const { error: delError } = await supabase.from("members").delete().in("id", ids);
     if (delError) {
       setError(delError.message);
-      return;
+      return false;
     }
     t.clearSelection();
     setConfirmState(null);
+    toast.success(
+      ids.length === 1 ? "Lid verwijderd" : `${ids.length} leden verwijderd`
+    );
     await fetchMembers();
   };
 
@@ -489,7 +493,11 @@ function MembersInner() {
           </DialogHeader>
           <MemberImporter
             showReportLink={false}
-            onDone={async () => { closeModal(); await fetchMembers(); }}
+            onDone={async () => {
+              closeModal();
+              toast.success("Import afgerond");
+              await fetchMembers();
+            }}
           />
         </DialogContent>
       </Dialog>
@@ -576,6 +584,7 @@ function MemberForm({
       setSaving(false);
     } else {
       setSaving(false);
+      toast.success(initial ? "Lid opgeslagen" : "Lid toegevoegd");
       await onSaved();
     }
   };
@@ -688,7 +697,7 @@ function MemberForm({
           Annuleren
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Opslaan..." : initial ? "Opslaan" : "Toevoegen"}
+          {saving ? "Opslaan…" : initial ? "Opslaan" : "Toevoegen"}
         </Button>
       </div>
     </form>

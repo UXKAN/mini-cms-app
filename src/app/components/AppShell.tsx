@@ -84,7 +84,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (authLoading || orgLoading || !user) {
-    return <main className="p-10 text-muted-foreground">Laden...</main>;
+    return (
+      <main aria-label="Bezig met laden" role="status" className="space-y-3 p-10">
+        <div className="h-6 w-40 rounded-full bg-[var(--surface-zone)] motion-safe:animate-pulse" />
+        <div className="h-3 w-72 max-w-full rounded-full bg-[var(--surface-zone)] motion-safe:animate-pulse" />
+        <div className="mt-6 h-32 max-w-2xl rounded-lg bg-[var(--surface-zone)] motion-safe:animate-pulse" />
+      </main>
+    );
   }
 
   if (!org) return null;

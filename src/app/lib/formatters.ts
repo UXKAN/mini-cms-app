@@ -59,23 +59,6 @@ export function displayName(
   return combined || m.name || "—";
 }
 
-export type StatusBadgeTone =
-  | "neutral"
-  | "success"
-  | "info"
-  | "warn"
-  | "destructive"
-  | "muted";
-
-export const STATUS_BADGE_CLASS: Record<StatusBadgeTone, string> = {
-  neutral: "bg-stone-100 text-stone-900 hover:bg-stone-100",
-  success: "bg-emerald-100 text-emerald-900 hover:bg-emerald-100",
-  info: "bg-sky-100 text-sky-900 hover:bg-sky-100",
-  warn: "bg-amber-100 text-amber-900 hover:bg-amber-100",
-  destructive: "bg-rose-100 text-rose-900 hover:bg-rose-100",
-  muted: "bg-stone-200 text-stone-700 hover:bg-stone-200",
-};
-
 export function initials(m: {
   first_name?: string | null;
   last_name?: string | null;

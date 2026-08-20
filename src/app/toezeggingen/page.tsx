@@ -399,7 +399,7 @@ function ToezeggingenInner() {
       .in("id", ids);
     if (delError) {
       setError(delError.message);
-      return;
+      return false;
     }
     t.clearSelection();
     setConfirmState(null);
@@ -957,7 +957,11 @@ function PledgeFormDialog({
               Annuleren
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Opslaan…" : "Opslaan"}
+              {saving
+                ? "Opslaan…"
+                : mode === "add_pledge"
+                  ? "Toevoegen"
+                  : "Opslaan"}
             </Button>
           </div>
         </form>
