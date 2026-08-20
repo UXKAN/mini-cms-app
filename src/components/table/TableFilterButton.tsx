@@ -41,7 +41,7 @@ export function TableFilterButton({ period, onChange }: Props) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" aria-label="Filters openen">
+        <Button variant="secondary" aria-label="Filters openen">
           <Filter className="h-4 w-4 mr-2" />
           Filter
         </Button>
@@ -113,13 +113,13 @@ export function ActiveFilterChips({ period, onClear }: ChipsProps) {
   if (!label) return null;
   return (
     <div className="flex gap-2 mb-3">
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 text-stone-900 px-3 py-1 text-xs">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-light)] text-primary px-3 py-1 text-xs">
         Periode: {label}
         <button
           type="button"
           onClick={onClear}
           aria-label="Wis periode-filter"
-          className="hover:text-stone-700"
+          className="hover:text-primary/70"
         >
           <X className="h-3 w-3" />
         </button>

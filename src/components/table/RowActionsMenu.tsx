@@ -33,7 +33,7 @@ export function RowActionsMenu({ actions, ariaLabel = "Acties" }: Props) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-10 w-10 rounded-[10px]"
           aria-label={ariaLabel}
         >
           <MoreHorizontal className="h-4 w-4" />

@@ -9,13 +9,13 @@ type Props = {
 
 export function EmptyState({ icon, title, description, actions }: Props) {
   return (
-    <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-6 py-16 text-center">
+    <div className="rounded-lg border border-dashed border-border bg-muted px-6 py-16 text-center">
       {icon && (
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-600">
+        <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-[var(--accent-light)] text-primary grid place-items-center">
           {icon}
         </div>
       )}
-      <h3 className="font-serif text-2xl text-foreground">{title}</h3>
+      <h3 className="text-[15px] font-bold text-foreground">{title}</h3>
       {description && (
         <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
           {description}

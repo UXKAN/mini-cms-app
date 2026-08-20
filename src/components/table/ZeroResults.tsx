@@ -7,7 +7,7 @@ type Props = {
 export function ZeroResults({ onClearFilters }: Props) {
   return (
     <div className="text-center py-12">
-      <p className="text-muted-foreground text-sm">Geen resultaten gevonden</p>
+      <p className="text-[15px] font-bold text-foreground">Geen resultaten gevonden</p>
       <Button
         variant="link"
         size="sm"

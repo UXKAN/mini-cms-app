@@ -28,7 +28,9 @@ export function TableStatusFilter({
   const current = options.find((o) => o.value === value);
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={`w-auto min-w-[180px] ${className}`}>
+      <SelectTrigger
+        className={`w-auto min-w-[180px] rounded-[10px] border-0 bg-[var(--surface-zone)] ${className}`}
+      >
         <SelectValue
           placeholder={labelPrefix}
           aria-label={`${labelPrefix}: ${current?.label ?? "alle"}`}

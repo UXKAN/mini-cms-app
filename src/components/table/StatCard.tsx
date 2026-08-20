@@ -1,25 +1,33 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type StatCardProps = {
   label: string;
   value: string;
   hint?: string;
+  featured?: boolean;
+  tone?: "default" | "warn";
 };
 
-export function StatCard({ label, value, hint }: StatCardProps) {
+export function StatCard({ label, value, hint, featured, tone = "default" }: StatCardProps) {
   return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-muted-foreground text-xs uppercase tracking-wider">
-          {label}
-        </p>
-        <p className="font-serif text-3xl font-normal text-foreground mt-1">
-          {value}
-        </p>
-        {hint && (
-          <p className="text-muted-foreground text-xs mt-1">{hint}</p>
+    <div
+      className={cn(
+        "rounded-lg p-5",
+        featured ? "bg-[var(--accent-light)]" : "bg-card shadow-[var(--shadow)]",
+      )}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 text-[26px] font-bold leading-none tracking-[-0.02em]",
+          featured ? "text-primary" : tone === "warn" ? "text-[var(--warn)]" : "text-foreground",
         )}
-      </CardContent>
-    </Card>
+      >
+        {value}
+      </p>
+      {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
+    </div>
   );
 }
