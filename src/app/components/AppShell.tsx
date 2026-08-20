@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -12,6 +12,7 @@ import {
   Calendar,
   LogOut,
   Menu,
+  X,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
@@ -40,6 +41,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { org, loading: orgLoading, error: orgError, retry: retryOrg } = useCurrentOrg(user);
   const [giftFormOpen, setGiftFormOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileNavOpen]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -184,10 +202,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {mobileNavOpen && (
             <div className="fixed inset-0 z-50 md:hidden">
               <div
+                aria-hidden="true"
                 className="absolute inset-0 bg-[oklch(0.22_0.015_170/0.35)]"
                 onClick={() => setMobileNavOpen(false)}
               />
               <aside className="absolute inset-y-0 left-0 flex w-[264px] flex-col bg-[var(--surface-zone)] shadow-[var(--shadow-lg)]">
+                <div className="flex justify-end px-3 pt-3">
+                  <button
+                    aria-label="Menu sluiten"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="grid h-10 w-10 place-items-center rounded-[10px] bg-card text-foreground shadow-[var(--shadow)]"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
                 {sidebarInner}
               </aside>
             </div>
