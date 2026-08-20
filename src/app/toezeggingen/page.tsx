@@ -848,8 +848,9 @@ function PledgeFormDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">Bedrag (€)</Label>
+              <Label htmlFor="tz-bedrag" className="text-xs text-muted-foreground">Bedrag (€)</Label>
               <Input
+                id="tz-bedrag"
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -861,8 +862,9 @@ function PledgeFormDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">Datum toezegging</Label>
+              <Label htmlFor="tz-datum" className="text-xs text-muted-foreground">Datum toezegging</Label>
               <Input
+                id="tz-datum"
                 type="date"
                 value={pledgedAt}
                 onChange={(e) => setPledgedAt(e.target.value)}
@@ -870,8 +872,9 @@ function PledgeFormDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5 col-span-2">
-              <Label className="text-xs text-muted-foreground">Persoon (optioneel)</Label>
+              <Label htmlFor="tz-persoon" className="text-xs text-muted-foreground">Persoon (optioneel)</Label>
               <select
+                id="tz-persoon"
                 value={memberId}
                 onChange={(e) => setMemberId(e.target.value)}
                 className="h-10 px-3 text-sm rounded-md border border-input bg-transparent"
@@ -885,8 +888,9 @@ function PledgeFormDialog({
               </select>
             </div>
             <div className="flex flex-col gap-1.5 col-span-2">
-              <Label className="text-xs text-muted-foreground">Omschrijving</Label>
+              <Label htmlFor="tz-omschrijving" className="text-xs text-muted-foreground">Omschrijving</Label>
               <Input
+                id="tz-omschrijving"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
                 placeholder="Bijvoorbeeld: Ramadan-fonds, gevel-renovatie"
@@ -894,8 +898,9 @@ function PledgeFormDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">Deadline (optioneel)</Label>
+              <Label htmlFor="tz-deadline" className="text-xs text-muted-foreground">Deadline (optioneel)</Label>
               <Input
+                id="tz-deadline"
                 type="date"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
@@ -903,8 +908,9 @@ function PledgeFormDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">Bron</Label>
+              <Label htmlFor="tz-bron" className="text-xs text-muted-foreground">Bron</Label>
               <select
+                id="tz-bron"
                 value={source}
                 onChange={(e) => setSource(e.target.value as PledgeSource)}
                 className="h-10 px-3 text-sm rounded-md border border-input bg-transparent"
@@ -918,8 +924,9 @@ function PledgeFormDialog({
             </div>
             {mode === "edit_pledge" && (
               <div className="flex flex-col gap-1.5 col-span-2">
-                <Label className="text-xs text-muted-foreground">Status</Label>
+                <Label htmlFor="tz-status" className="text-xs text-muted-foreground">Status</Label>
                 <select
+                  id="tz-status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as PledgeStatus)}
                   className="h-10 px-3 text-sm rounded-md border border-input bg-transparent"
@@ -932,8 +939,9 @@ function PledgeFormDialog({
               </div>
             )}
             <div className="flex flex-col gap-1.5 col-span-2">
-              <Label className="text-xs text-muted-foreground">Interne notities (optioneel)</Label>
+              <Label htmlFor="tz-notities" className="text-xs text-muted-foreground">Interne notities (optioneel)</Label>
               <Input
+                id="tz-notities"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Niet zichtbaar voor schenker"
@@ -1115,8 +1123,9 @@ function MatchPaymentDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">Bedrag (€)</Label>
+              <Label htmlFor="mp-bedrag" className="text-xs text-muted-foreground">Bedrag (€)</Label>
               <Input
+                id="mp-bedrag"
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -1129,8 +1138,9 @@ function MatchPaymentDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">Methode</Label>
+              <Label htmlFor="mp-methode" className="text-xs text-muted-foreground">Methode</Label>
               <select
+                id="mp-methode"
                 value={method}
                 onChange={(e) => setMethod(e.target.value as DonationMethod)}
                 disabled={insertedAmount !== null}
@@ -1143,8 +1153,9 @@ function MatchPaymentDialog({
               </select>
             </div>
             <div className="flex flex-col gap-1.5 col-span-2">
-              <Label className="text-xs text-muted-foreground">Datum betaling</Label>
+              <Label htmlFor="mp-datum" className="text-xs text-muted-foreground">Datum betaling</Label>
               <Input
+                id="mp-datum"
                 type="date"
                 value={donatedAt}
                 onChange={(e) => setDonatedAt(e.target.value)}
@@ -1153,8 +1164,9 @@ function MatchPaymentDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5 col-span-2">
-              <Label className="text-xs text-muted-foreground">Persoon (optioneel)</Label>
+              <Label htmlFor="mp-persoon" className="text-xs text-muted-foreground">Persoon (optioneel)</Label>
               <select
+                id="mp-persoon"
                 value={memberId}
                 onChange={(e) => setMemberId(e.target.value)}
                 disabled={insertedAmount !== null}
@@ -1169,8 +1181,9 @@ function MatchPaymentDialog({
               </select>
             </div>
             <div className="flex flex-col gap-1.5 col-span-2">
-              <Label className="text-xs text-muted-foreground">Omschrijving</Label>
+              <Label htmlFor="mp-omschrijving" className="text-xs text-muted-foreground">Omschrijving</Label>
               <Input
+                id="mp-omschrijving"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={insertedAmount !== null}

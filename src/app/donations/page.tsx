@@ -511,8 +511,9 @@ function DonationForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Bedrag (EUR) *</Label>
+          <Label htmlFor="donatie-bedrag" className="text-xs text-muted-foreground">Bedrag (EUR) *</Label>
           <Input
+            id="donatie-bedrag"
             type="number"
             step="0.01"
             min="0"
@@ -524,8 +525,9 @@ function DonationForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Datum *</Label>
+          <Label htmlFor="donatie-datum" className="text-xs text-muted-foreground">Datum *</Label>
           <Input
+            id="donatie-datum"
             type="date"
             value={donatedAt}
             onChange={(e) => setDonatedAt(e.target.value)}
@@ -534,8 +536,9 @@ function DonationForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Methode</Label>
+          <Label htmlFor="donatie-methode" className="text-xs text-muted-foreground">Methode</Label>
           <select
+            id="donatie-methode"
             value={method}
             onChange={(e) => setMethod(e.target.value as DonationMethod)}
             className={selectCls}
@@ -546,8 +549,9 @@ function DonationForm({
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Donateur (optioneel)</Label>
+          <Label htmlFor="donatie-donateur" className="text-xs text-muted-foreground">Donateur (optioneel)</Label>
           <select
+            id="donatie-donateur"
             value={memberId}
             onChange={(e) => setMemberId(e.target.value)}
             className={selectCls}
@@ -559,8 +563,9 @@ function DonationForm({
           </select>
         </div>
         <div className="flex flex-col gap-1.5 col-span-2">
-          <Label className="text-xs text-muted-foreground">Omschrijving</Label>
+          <Label htmlFor="donatie-omschrijving" className="text-xs text-muted-foreground">Omschrijving</Label>
           <Input
+            id="donatie-omschrijving"
             placeholder="Bijvoorbeeld: Ramadan-fonds, gevel-renovatie, vrije bestemming"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

@@ -661,13 +661,15 @@ function MemberForm({
         />
         <Input
           type="date"
+          aria-label="Startdatum"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           className={inputCls}
         />
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs text-muted-foreground">Status</Label>
+          <Label htmlFor="lid-status" className="text-xs text-muted-foreground">Status</Label>
           <select
+            id="lid-status"
             value={status}
             onChange={(e) => setStatus(e.target.value as MemberStatus)}
             className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
