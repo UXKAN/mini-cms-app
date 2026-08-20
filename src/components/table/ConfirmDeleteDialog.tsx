@@ -61,7 +61,7 @@ export function ConfirmDeleteDialog({
         </AlertDialogHeader>
 
         {mode === "financial" && (
-          <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+          <div className="rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
             <div className="flex gap-2">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <div>
