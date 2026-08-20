@@ -75,3 +75,19 @@ export const STATUS_BADGE_CLASS: Record<StatusBadgeTone, string> = {
   destructive: "bg-rose-100 text-rose-900 hover:bg-rose-100",
   muted: "bg-stone-200 text-stone-700 hover:bg-stone-200",
 };
+
+export function initials(m: {
+  first_name?: string | null;
+  last_name?: string | null;
+  name?: string | null;
+}): string {
+  const first = m.first_name?.trim();
+  const last = m.last_name?.trim();
+  if (first || last) {
+    return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase();
+  }
+  const parts = (m.name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}

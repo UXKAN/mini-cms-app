@@ -41,7 +41,7 @@ import { ZeroResults } from "@/components/table/ZeroResults";
 import { TableLoadingState } from "@/components/table/LoadingState";
 import { StatCard } from "@/components/table/StatCard";
 import { exportCsv } from "../lib/exportCsv";
-import { fmtDate, fmtEuro, displayName, toLocalISODate } from "../lib/formatters";
+import { fmtDate, fmtEuro, displayName, initials, toLocalISODate } from "../lib/formatters";
 import { Users, Trash2, Download, Eye, Pencil } from "lucide-react";
 
 const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
@@ -76,18 +76,6 @@ const COL_HEAD =
 const CELL = "px-4 py-3.5";
 const PILL =
   "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold";
-
-function initials(m: Member): string {
-  const first = m.first_name?.trim();
-  const last = m.last_name?.trim();
-  if (first || last) {
-    return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase();
-  }
-  const parts = (m.name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
 
 const STATUS_PILL: Record<MemberStatus, { label: string; tone: string }> = {
   active: { label: "Actief", tone: "bg-[var(--accent-light)] text-primary" },

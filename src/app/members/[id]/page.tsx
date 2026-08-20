@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatCard } from "@/components/table/StatCard";
-import { fmtEuro, fmtDate, displayName } from "../../lib/formatters";
+import { fmtEuro, fmtDate, displayName, initials } from "../../lib/formatters";
 
 const PANEL = "rounded-lg bg-card p-5 shadow-[var(--shadow)]";
 const PANEL_LABEL =
@@ -73,18 +73,6 @@ const METHOD_LABELS: Record<string, string> = {
   online: "Online",
   other: "Overig",
 };
-
-function initials(m: Member): string {
-  const first = m.first_name?.trim();
-  const last = m.last_name?.trim();
-  if (first || last) {
-    return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase();
-  }
-  const parts = (m.name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
 
 function Pill({ label, tone }: { label: string; tone: string }) {
   return <span className={`${PILL} ${tone}`}>{label}</span>;
@@ -370,7 +358,12 @@ function MemberDetailInner({
                     </TableCell>
                     <TableCell className={CELL}>
                       {e.payment_status ? (
-                        <Pill {...PAYMENT_STATUS_PILL[e.payment_status]} />
+                        <Pill
+                          {...(PAYMENT_STATUS_PILL[e.payment_status] ?? {
+                            label: e.payment_status,
+                            tone: TONE_ZONE,
+                          })}
+                        />
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>
                       )}
