@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import AppShell from "../components/AppShell";
+import { PageHeader } from "../components/PageHeader";
 import { useOrg } from "../lib/orgContext";
 import type {
   DonationMethod,
@@ -28,7 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { useTableState } from "../lib/useTableState";
 import { TableToolbar } from "@/components/table/TableToolbar";
 import { TableSearch } from "@/components/table/TableSearch";
@@ -46,6 +46,7 @@ import { exportCsv } from "../lib/exportCsv";
 import { fmtDate, fmtEuro, toLocalISODate } from "../lib/formatters";
 import { remainingAmount, resolvePaymentStatus } from "../lib/payments";
 import { fetchPaidByKey } from "../lib/matchedDonations";
+import { toast } from "sonner";
 import { HandshakeIcon, Trash2, Download, Eye, Pencil, CheckCircle, Mail } from "lucide-react";
 
 /* ─── helpers ─────────────────────────────────────── */
@@ -75,13 +76,54 @@ const PLEDGE_STATUS_LABELS: Record<PledgeStatus, string> = {
   cancelled: "Geannuleerd",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  open: "bg-amber-100 text-amber-900",
-  partial: "bg-blue-100 text-blue-900",
-  paid: "bg-emerald-100 text-emerald-900",
-  cancelled: "bg-stone-200 text-stone-700",
-  unpaid: "bg-amber-100 text-amber-900",
+const COL_HEAD =
+  "text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+const CELL = "px-4 py-3.5";
+const PILL =
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold";
+
+const STATUS_TONE: Record<string, string> = {
+  open: "bg-[var(--warn-light)] text-[var(--warn)]",
+  unpaid: "bg-[var(--warn-light)] text-[var(--warn)]",
+  partial: "bg-[var(--accent-light)] text-primary",
+  paid: "bg-[var(--accent-light)] text-primary",
+  cancelled: "bg-[var(--surface-zone)] text-muted-foreground",
 };
+
+function StatusPill({ status }: { status: string }) {
+  const tone =
+    STATUS_TONE[status] ?? "bg-[var(--surface-zone)] text-muted-foreground";
+  return (
+    <span className={`${PILL} ${tone}`}>
+      {PLEDGE_STATUS_LABELS[status as PledgeStatus] ?? status}
+    </span>
+  );
+}
+
+function SourceChip({ label }: { label: string }) {
+  return (
+    <span className={`${PILL} bg-[var(--surface-zone)] text-muted-foreground`}>
+      {label}
+    </span>
+  );
+}
+
+function PaymentProgress({ paid, total }: { paid: number; total: number }) {
+  const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--accent-light)]">
+        <div
+          className="h-full rounded-full bg-primary"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="whitespace-nowrap text-xs font-semibold text-muted-foreground">
+        {fmtEuro(paid)} / {fmtEuro(total)}
+      </span>
+    </div>
+  );
+}
 
 /* ─── status dropdown options ─────────────────────── */
 
@@ -361,6 +403,11 @@ function ToezeggingenInner() {
     }
     t.clearSelection();
     setConfirmState(null);
+    toast.success(
+      ids.length === 1
+        ? "Toezegging verwijderd"
+        : `${ids.length} toezeggingen verwijderd`
+    );
     await fetchAll();
   };
 
@@ -397,32 +444,32 @@ function ToezeggingenInner() {
 
   return (
     <>
-      <div className="flex justify-between items-end mb-7 gap-4 flex-wrap">
-        <div>
-          <h1 className="font-serif text-4xl font-normal text-foreground">
-            Toezeggingen
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Mondelinge toezeggingen en ondertekende ANBI-akten waarvoor het
-            geld nog niet binnen is.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Toezeggingen"
+        subtitle={
+          loading
+            ? "Laden…"
+            : `${rows.length} openstaand · ${fmtEuro(totalOpen)} nog te ontvangen`
+        }
+      >
+        <Button onClick={openAddPledge}>Toezegging toevoegen</Button>
+      </PageHeader>
 
       {error && (
-        <div
-          className="p-3 rounded-[7px] mb-4 text-sm"
-          style={{ background: "var(--error-light)", color: "var(--error)" }}
-        >
+        <div className="mb-4 rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
       {!t.isEmpty && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <StatCard featured label="Totaal openstaand" value={fmtEuro(totalOpen)} />
           <StatCard label="Aantal openstaand" value={String(rows.length)} />
-          <StatCard label="Totaal openstaand" value={fmtEuro(totalOpen)} />
-          <StatCard label="Verlopen" value={String(overdueCount)} />
+          <StatCard
+            label="Verlopen"
+            value={String(overdueCount)}
+            tone={overdueCount > 0 ? "warn" : "default"}
+          />
         </div>
       )}
 
@@ -451,7 +498,6 @@ function ToezeggingenInner() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button onClick={openAddPledge}>Toezegging toevoegen</Button>
           </>
         }
       />
@@ -462,21 +508,18 @@ function ToezeggingenInner() {
       />
 
       {loading ? (
-        <TableLoadingState columns={9} />
+        <TableLoadingState columns={10} />
       ) : t.isEmpty ? (
         <EmptyState
           icon={<HandshakeIcon className="h-6 w-6" />}
           title="Nog geen toezeggingen"
-          description="Open toezeggingen kun je hier bijhouden."
+          description="Mondelinge toezeggingen en ondertekende ANBI-akten waarvoor het geld nog niet binnen is, houd je hier bij."
           actions={<Button onClick={openAddPledge}>Toezegging toevoegen</Button>}
         />
       ) : t.isFilteredEmpty ? (
         <ZeroResults onClearFilters={t.resetFilters} />
       ) : (
-        <div
-          className="rounded-[10px] border border-border overflow-hidden"
-          style={{ background: "var(--surface)" }}
-        >
+        <div className="overflow-hidden rounded-lg bg-card shadow-[var(--shadow)]">
           <Table>
             <TableHeader>
               <TableRow>
@@ -489,13 +532,24 @@ function ToezeggingenInner() {
                     ariaLabel={`Selecteer alle zichtbare toezeggingen`}
                   />
                 </TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Persoon</TableHead>
-                <TableHead className="text-right">Bedrag</TableHead>
-                <TableHead>Omschrijving</TableHead>
-                <TableHead>Toegezegd op</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className={`${COL_HEAD} hidden lg:table-cell`}>
+                  Type
+                </TableHead>
+                <TableHead className={COL_HEAD}>Persoon</TableHead>
+                <TableHead className={`${COL_HEAD} text-right`}>Bedrag</TableHead>
+                <TableHead className={`${COL_HEAD} hidden xl:table-cell`}>
+                  Omschrijving
+                </TableHead>
+                <TableHead className={`${COL_HEAD} hidden md:table-cell`}>
+                  Toegezegd op
+                </TableHead>
+                <TableHead className={`${COL_HEAD} hidden lg:table-cell`}>
+                  Deadline
+                </TableHead>
+                <TableHead className={`${COL_HEAD} min-w-[180px]`}>
+                  Voortgang
+                </TableHead>
+                <TableHead className={COL_HEAD}>Status</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -510,7 +564,7 @@ function ToezeggingenInner() {
                   >
                     {/* Checkbox column: empty cell for gift_agreement rows */}
                     {isPledge ? (
-                      <TableCell>
+                      <TableCell className={CELL}>
                         <RowSelectCheckbox
                           checked={t.selectedKeys.has(rowKey)}
                           onChange={() => t.toggleRow(rowKey)}
@@ -518,49 +572,60 @@ function ToezeggingenInner() {
                         />
                       </TableCell>
                     ) : (
-                      <TableCell />
+                      <TableCell className={CELL} />
                     )}
 
-                    <TableCell>
-                      <Badge variant="secondary" className="font-normal">
-                        {r.source_label}
-                      </Badge>
+                    <TableCell className={`${CELL} hidden lg:table-cell`}>
+                      <SourceChip label={r.source_label} />
                     </TableCell>
 
-                    <TableCell className="text-sm">{r.member_name}</TableCell>
+                    <TableCell
+                      className={`${CELL} text-[13px] font-semibold text-foreground`}
+                    >
+                      {r.member_name}
+                    </TableCell>
 
-                    <TableCell className="text-right font-medium">
+                    <TableCell className={`${CELL} text-right font-semibold`}>
                       {fmtEuro(r.amount)}
                     </TableCell>
 
-                    <TableCell className="text-sm text-muted-foreground max-w-[240px] truncate">
+                    <TableCell
+                      className={`${CELL} hidden xl:table-cell max-w-[240px] truncate text-muted-foreground`}
+                    >
                       {r.description ?? "—"}
                     </TableCell>
 
-                    <TableCell className="text-sm">
+                    <TableCell
+                      className={`${CELL} hidden md:table-cell text-muted-foreground`}
+                    >
                       {fmtDate(r.pledged_at)}
                     </TableCell>
 
-                    <TableCell className="text-sm">
+                    <TableCell
+                      className={`${CELL} hidden lg:table-cell text-muted-foreground`}
+                    >
                       {fmtDate(r.deadline)}
                     </TableCell>
 
-                    <TableCell>
-                      <span
-                        className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
-                          STATUS_COLORS[r.status] ?? "bg-stone-100 text-stone-700"
-                        }`}
-                      >
-                        {PLEDGE_STATUS_LABELS[r.status as PledgeStatus] ?? r.status}
-                      </span>
+                    <TableCell className={`${CELL} min-w-[180px]`}>
+                      <PaymentProgress paid={r.paid_so_far} total={r.amount} />
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell className={CELL}>
+                      <StatusPill status={r.status} />
+                    </TableCell>
+
+                    <TableCell className={CELL}>
                       <RowActionsMenu
                         ariaLabel={`Acties voor toezegging van ${r.member_name}`}
                         actions={
                           isPledge
                             ? [
+                                {
+                                  label: "Markeer als betaald",
+                                  icon: <CheckCircle className="h-4 w-4" />,
+                                  onClick: () => openMatchPayment(r),
+                                },
                                 {
                                   label: "Bekijken",
                                   icon: <Eye className="h-4 w-4" />,
@@ -570,11 +635,6 @@ function ToezeggingenInner() {
                                   label: "Bewerken",
                                   icon: <Pencil className="h-4 w-4" />,
                                   onClick: () => openEditPledge(r),
-                                },
-                                {
-                                  label: "Markeer als betaald",
-                                  icon: <CheckCircle className="h-4 w-4" />,
-                                  onClick: () => openMatchPayment(r),
                                 },
                                 ...(r.member_email
                                   ? [
@@ -593,16 +653,16 @@ function ToezeggingenInner() {
                                   onClick: () => askDeleteSingle(r),
                                 },
                               ]
-                            : /* gift_agreement: Bekijken + Markeer als betaald (+ optioneel reminder) */
+                            : /* gift_agreement: Markeer als betaald + Bekijken (+ optioneel reminder) */
                               [
-                                {
-                                  label: "Bekijken",
-                                  icon: <Eye className="h-4 w-4" />,
-                                  onClick: () => openMatchPayment(r),
-                                },
                                 {
                                   label: "Markeer als betaald",
                                   icon: <CheckCircle className="h-4 w-4" />,
+                                  onClick: () => openMatchPayment(r),
+                                },
+                                {
+                                  label: "Bekijken",
+                                  icon: <Eye className="h-4 w-4" />,
                                   onClick: () => openMatchPayment(r),
                                 },
                                 ...(r.member_email
@@ -770,6 +830,9 @@ function PledgeFormDialog({
       setFormError(opError.message);
       return;
     }
+    toast.success(
+      mode === "add_pledge" ? "Toezegging toegevoegd" : "Toezegging opgeslagen"
+    );
     onSaved();
   };
 
@@ -879,11 +942,18 @@ function PledgeFormDialog({
           </div>
 
           {formError && (
-            <p className="text-sm text-destructive">{formError}</p>
+            <div className="rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
+              {formError}
+            </div>
           )}
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={saving}
+            >
               Annuleren
             </Button>
             <Button type="submit" disabled={saving}>
@@ -1012,6 +1082,9 @@ function MatchPaymentDialog({
     }
 
     setSaving(false);
+    toast.success(
+      fullyPaid ? "Gemarkeerd als betaald" : "Deelbetaling geregistreerd"
+    );
     onMatched();
   };
 
@@ -1101,10 +1174,19 @@ function MatchPaymentDialog({
             </div>
           </div>
 
-          {formError && <p className="text-sm text-destructive">{formError}</p>}
+          {formError && (
+            <div className="rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
+              {formError}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={saving}
+            >
               {insertedAmount !== null ? "Sluiten" : "Annuleren"}
             </Button>
             <Button type="submit" disabled={saving}>
