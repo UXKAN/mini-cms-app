@@ -60,9 +60,9 @@
   --selected: #007F56;
 
   /* Status-tokens */
-  --success: oklch(0.55 0.15 150);
+  --success: oklch(0.50 0.14 150);
   --success-light: oklch(0.962 0.013 165);
-  --warn: oklch(0.58 0.1 75);
+  --warn: oklch(0.50 0.09 75);
   --warn-light: oklch(0.965 0.025 85);
   --error-light: oklch(0.96 0.02 30);
 
@@ -93,7 +93,7 @@
   --surface: var(--card);
   --ink: var(--foreground);
   --ink-muted: var(--muted-foreground);
-  --ink-subtle: oklch(0.55 0.012 170); /* geen shadcn-equivalent, eigen tint */
+  --ink-subtle: oklch(0.53 0.012 170); /* geen shadcn-equivalent, eigen tint */
   --accent: var(--primary);
   --error: var(--destructive);
   --border-focus: var(--ring);

@@ -521,7 +521,7 @@ function ToezeggingenInner() {
         <ZeroResults onClearFilters={t.resetFilters} />
       ) : (
         <div className="overflow-hidden rounded-lg bg-card shadow-[var(--shadow)]">
-          <Table>
+          <Table aria-label="Openstaande toezeggingen">
             <TableHeader>
               <TableRow>
                 {/* Header checkbox — only selectable rows (pledges) count */}

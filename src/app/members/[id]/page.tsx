@@ -260,7 +260,7 @@ function MemberDetailInner({
             Periodieke gift-akten ({periodieke.length})
           </p>
           <div className="mt-2">
-            <Table>
+            <Table aria-label="Periodieke gift-akten">
               <TableHeader>
                 <TableRow>
                   <TableHead className={COL_HEAD}>
@@ -321,7 +321,7 @@ function MemberDetailInner({
             Eenmalige gift-akten ({eenmalige.length})
           </p>
           <div className="mt-2">
-            <Table>
+            <Table aria-label="Eenmalige gift-akten">
               <TableHeader>
                 <TableRow>
                   <TableHead className={COL_HEAD}>Datum</TableHead>
@@ -389,7 +389,7 @@ function MemberDetailInner({
           </p>
         ) : (
           <div className="mt-2">
-            <Table>
+            <Table aria-label="Donatiehistorie">
               <TableHeader>
                 <TableRow>
                   <TableHead className={COL_HEAD}>Datum</TableHead>

@@ -321,7 +321,7 @@ function MembersInner() {
         <ZeroResults onClearFilters={t.resetFilters} />
       ) : (
         <div className="overflow-hidden rounded-lg bg-card shadow-[var(--shadow)]">
-          <Table>
+          <Table aria-label="Ledenlijst">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">

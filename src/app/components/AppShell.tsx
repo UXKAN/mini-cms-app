@@ -117,7 +117,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           active
             ? "bg-card text-primary shadow-[var(--shadow)]"
             : soon
-              ? "text-muted-foreground/60 hover:bg-[var(--accent-light)]"
+              ? "text-muted-foreground hover:bg-[var(--accent-light)]"
               : "text-foreground hover:bg-[var(--accent-light)]",
         ].join(" ")}
       >
@@ -160,7 +160,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2">
         {nav.map((item) => navItem(item))}
-        <div className="mt-4 px-3 pb-1 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+        <div className="mt-4 px-3 pb-1 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
           Binnenkort
         </div>
         {navSoon.map((item) => navItem(item, { soon: true }))}

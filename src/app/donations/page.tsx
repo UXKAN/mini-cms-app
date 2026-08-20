@@ -292,7 +292,7 @@ function DonationsInner() {
         <ZeroResults onClearFilters={t.resetFilters} />
       ) : (
         <div className="overflow-hidden rounded-lg bg-card shadow-[var(--shadow)]">
-          <Table>
+          <Table aria-label="Donaties">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
