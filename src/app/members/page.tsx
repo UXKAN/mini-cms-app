@@ -7,10 +7,10 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/useAuth";
 import AppShell from "../components/AppShell";
 import MemberImporter from "../components/MemberImporter";
+import { PageHeader } from "../components/PageHeader";
 import { useOrg } from "../lib/orgContext";
 import type { Member, MemberStatus } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -71,35 +71,54 @@ function memberStatusKey(m: Member): string {
 
 type ModalMode = "closed" | "add" | "edit" | "import";
 
-function StatusBadge({ status }: { status: MemberStatus }) {
-  if (status === "active") return <Badge>Actief</Badge>;
-  if (status === "inactive") return <Badge variant="secondary">Inactief</Badge>;
-  if (status === "cancelled") return <Badge variant="destructive">Opgezegd</Badge>;
-  return (
-    <Badge
-      variant="outline"
-      style={{ borderColor: "var(--warn)", color: "var(--warn)" }}
-    >
-      Prospect
-    </Badge>
-  );
+const COL_HEAD =
+  "text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+const CELL = "px-4 py-3.5";
+const PILL =
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold";
+
+function initials(m: Member): string {
+  const first = m.first_name?.trim();
+  const last = m.last_name?.trim();
+  if (first || last) {
+    return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase();
+  }
+  const parts = (m.name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function MembershipTypeBadge({ type }: { type: string | null }) {
-  if (!type) return <span className="text-muted-foreground text-sm">—</span>;
-  if (type === "lid")
-    return (
-      <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100">
-        Lid
-      </Badge>
-    );
-  if (type === "donateur")
-    return (
-      <Badge className="bg-sky-100 text-sky-900 hover:bg-sky-100">
-        Donateur
-      </Badge>
-    );
-  return <Badge variant="secondary">{type}</Badge>;
+const STATUS_PILL: Record<MemberStatus, { label: string; tone: string }> = {
+  active: { label: "Actief", tone: "bg-[var(--accent-light)] text-primary" },
+  inactive: {
+    label: "Inactief",
+    tone: "bg-[var(--surface-zone)] text-muted-foreground",
+  },
+  prospect: {
+    label: "Prospect",
+    tone: "bg-[var(--warn-light)] text-[var(--warn)]",
+  },
+  cancelled: {
+    label: "Opgezegd",
+    tone: "bg-[var(--error-light)] text-destructive",
+  },
+};
+
+function StatusPill({ status }: { status: MemberStatus }) {
+  const { label, tone } = STATUS_PILL[status];
+  return <span className={`${PILL} ${tone}`}>{label}</span>;
+}
+
+function MembershipTypeChip({ type }: { type: string | null }) {
+  if (!type) return <span className="text-sm text-muted-foreground">—</span>;
+  const label =
+    type === "lid" ? "Lid" : type === "donateur" ? "Donateur" : type;
+  return (
+    <span className={`${PILL} bg-[var(--surface-zone)] text-muted-foreground`}>
+      {label}
+    </span>
+  );
 }
 
 function MembersInner() {
@@ -215,20 +234,15 @@ function MembersInner() {
 
   return (
     <>
-      <div className="flex justify-between items-end mb-7 gap-4 flex-wrap">
-        <div>
-          <h1 className="font-serif text-4xl font-normal text-foreground">Leden</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Beheer leden en donateurs van de moskee.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Leden"
+        subtitle={loading ? "Laden…" : `${members.length} leden & donateurs`}
+      >
+        <Button onClick={openAdd}>Nieuw lid</Button>
+      </PageHeader>
 
       {error && (
-        <div
-          className="p-3 rounded-[7px] mb-4 text-sm"
-          style={{ background: "var(--error-light)", color: "var(--error)" }}
-        >
+        <div className="mb-4 rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -236,6 +250,7 @@ function MembersInner() {
       {!t.isEmpty && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <StatCard
+            featured
             label="Totaal leden & donateurs"
             value={String(members.length)}
           />
@@ -284,7 +299,6 @@ function MembersInner() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button onClick={openAdd}>Nieuw lid</Button>
           </>
         }
       />
@@ -295,7 +309,7 @@ function MembersInner() {
       />
 
       {loading ? (
-        <TableLoadingState columns={8} />
+        <TableLoadingState columns={6} />
       ) : t.isEmpty ? (
         <EmptyState
           icon={<Users className="h-6 w-6" />}
@@ -313,10 +327,7 @@ function MembersInner() {
       ) : t.isFilteredEmpty ? (
         <ZeroResults onClearFilters={t.resetFilters} />
       ) : (
-        <div
-          className="rounded-[10px] border border-border overflow-hidden"
-          style={{ background: "var(--surface)" }}
-        >
+        <div className="overflow-hidden rounded-lg bg-card shadow-[var(--shadow)]">
           <Table>
             <TableHeader>
               <TableRow>
@@ -328,12 +339,17 @@ function MembersInner() {
                     ariaLabel={`Selecteer alle ${t.filteredItems.length} zichtbare leden`}
                   />
                 </TableHead>
-                <TableHead>Naam</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead className="text-right">Bedrag/maand</TableHead>
-                <TableHead>Aangemaakt</TableHead>
+                <TableHead className={COL_HEAD}>Naam</TableHead>
+                <TableHead className={`${COL_HEAD} hidden sm:table-cell`}>
+                  Type
+                </TableHead>
+                <TableHead className={COL_HEAD}>Status</TableHead>
+                <TableHead className={`${COL_HEAD} text-right`}>
+                  Bedrag/maand
+                </TableHead>
+                <TableHead className={`${COL_HEAD} hidden md:table-cell`}>
+                  Aangemaakt
+                </TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -343,34 +359,53 @@ function MembersInner() {
                   key={m.id}
                   data-state={t.selectedKeys.has(m.id) ? "selected" : undefined}
                 >
-                  <TableCell>
+                  <TableCell className={CELL}>
                     <RowSelectCheckbox
                       checked={t.selectedKeys.has(m.id)}
                       onChange={() => t.toggleRow(m.id)}
                       ariaLabel={`Selecteer ${displayName(m)}`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">
-                    <Link href={`/members/${m.id}`} className="hover:underline">
-                      {displayName(m)}
-                    </Link>
+                  <TableCell className={CELL}>
+                    <div className="flex items-center gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent-light)] text-[11px] font-bold text-primary"
+                      >
+                        {initials(m)}
+                      </span>
+                      <div className="min-w-0">
+                        <Link
+                          href={`/members/${m.id}`}
+                          className="block truncate text-[13px] font-semibold text-foreground hover:underline"
+                        >
+                          {displayName(m)}
+                        </Link>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {m.email ?? "geen e-mail"}
+                        </div>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>
-                    <MembershipTypeBadge type={m.membership_type} />
+                  <TableCell className={`${CELL} hidden sm:table-cell`}>
+                    <MembershipTypeChip type={m.membership_type} />
                   </TableCell>
-                  <TableCell>
-                    <StatusBadge status={m.status} />
+                  <TableCell className={CELL}>
+                    <StatusPill status={m.status} />
                   </TableCell>
-                  <TableCell>{m.email ?? "—"}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className={`${CELL} text-right font-semibold`}>
                     {fmtEuro(
                       m.monthly_amount != null
                         ? m.monthly_amount
                         : (agreementAmounts.get(m.id) ?? null)
                     )}
                   </TableCell>
-                  <TableCell>{fmtDate(m.created_at)}</TableCell>
-                  <TableCell>
+                  <TableCell
+                    className={`${CELL} hidden md:table-cell text-muted-foreground`}
+                  >
+                    {fmtDate(m.created_at)}
+                  </TableCell>
+                  <TableCell className={CELL}>
                     <RowActionsMenu
                       actions={[
                         {
@@ -441,9 +476,9 @@ function MembersInner() {
         open={modalMode === "add" || modalMode === "edit"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[640px]">
           <DialogHeader>
-            <DialogTitle className="font-serif font-normal text-xl">
+            <DialogTitle>
               {modalMode === "edit" ? "Lid bewerken" : "Nieuw lid"}
             </DialogTitle>
           </DialogHeader>
@@ -460,11 +495,9 @@ function MembersInner() {
         open={modalMode === "import"}
         onOpenChange={(open) => { if (!open) closeModal(); }}
       >
-        <DialogContent className="max-w-[960px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[960px]">
           <DialogHeader>
-            <DialogTitle className="font-serif font-normal text-xl">
-              Leden importeren
-            </DialogTitle>
+            <DialogTitle>Leden importeren</DialogTitle>
           </DialogHeader>
           <MemberImporter
             showReportLink={false}
@@ -657,10 +690,7 @@ function MemberForm({
       </div>
 
       {formError && (
-        <div
-          className="p-3 rounded-[7px] mt-4 text-sm"
-          style={{ background: "var(--error-light)", color: "var(--error)" }}
-        >
+        <div className="mt-4 rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
           {formError}
         </div>
       )}
