@@ -21,7 +21,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-[oklch(0.22_0.015_170/0.35)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -38,14 +38,12 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        // flex flex-col + gap-6 (was grid + gap-4): predictable 24px breathing
-        // room between header/content/footer, regardless of children nesting.
-        // max-h + overflow-y-auto keeps the modal inside the viewport when
-        // forms are long — without it, tall content gets clipped above and
-        // below because the modal is centered with translateY(-50%).
-        // bg-surface (whiter than --background) makes the modal lift visually
-        // off the page bg, AND lets warm-bg inputs naturally stand out.
-        "fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg max-h-[calc(100vh-4rem)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-6 border bg-card p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        // max-h houdt de modal binnen de viewport; zonder dat wordt lange
+        // content boven en onder afgeknipt, omdat de modal met translateY(-50%)
+        // gecentreerd staat. overflow-y-auto staat hier nog als fallback zolang
+        // pagina's hun inhoud niet in <DialogBody> zetten — zodra ze dat wel
+        // doen, scrollt alleen de body en blijven sluitknop en footer staan.
+        "fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg max-h-[calc(100vh-4rem)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-6 border-0 bg-card p-6 rounded-[16px] shadow-[var(--shadow-lg)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
         className
       )}
       {...props}
@@ -74,6 +72,17 @@ const DialogHeader = ({
 )
 DialogHeader.displayName = "DialogHeader"
 
+const DialogBody = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("flex flex-1 flex-col gap-6 overflow-y-auto", className)}
+    {...props}
+  />
+)
+DialogBody.displayName = "DialogBody"
+
 const DialogFooter = ({
   className,
   ...props
@@ -97,7 +106,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      "text-lg font-bold tracking-tight",
       className
     )}
     {...props}
@@ -125,6 +134,7 @@ export {
   DialogTrigger,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogFooter,
   DialogTitle,
   DialogDescription,

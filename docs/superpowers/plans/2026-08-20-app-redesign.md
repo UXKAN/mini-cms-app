@@ -121,6 +121,8 @@ Browser (`/login`): achtergrond wit i.p.v. crème, knop merkgroen. Alles nog lee
 git add src/app/globals.css && git commit -m "feat(redesign): soft-SaaS tokens — wit oppervlak, zone/tint-groen, radius-lg, zachte schaduwen"
 ```
 
+> **Bewuste keuze (Task 1-review):** `--radius-lg: 14px` in de unlayered `:root` overschrijft Tailwinds eigen `rounded-lg` (voorheen 8px) app-breed — zelfde mechanisme als het bestaande `--radius`-patroon. Geaccepteerd als feature: `rounded-lg` is vanaf nu dé idiomatische kaart-afronding (14px); gebruik in Tasks 4-11 `rounded-lg` waar het plan `rounded-[14px]` zegt. Task 12 controleert visueel de vier niet-geplande meelifters (gift-flow selectable-cards, alert-dialog, PublicHeader, ThankYou). NB: Tailwinds `shadow`/`shadow-lg`-utilities verwijzen NIET naar onze `--shadow`-tokens; voor de zachte schaduwen altijd `shadow-[var(--shadow)]`/`shadow-[var(--shadow-lg)]` gebruiken.
+
 ---
 
 ### Task 2: sonner-toasts
