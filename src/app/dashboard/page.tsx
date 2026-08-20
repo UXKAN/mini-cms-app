@@ -93,7 +93,9 @@ function TaskCard({
         <p className="text-xs text-muted-foreground">{hint}</p>
       </div>
       <Button variant="secondary" size="sm" asChild>
-        <Link href={href}>Bekijk</Link>
+        <Link href={href} aria-label={`Bekijk: ${title}`}>
+          Bekijk
+        </Link>
       </Button>
     </div>
   );
@@ -345,8 +347,8 @@ function DashboardInner() {
   const yearRange = `Jan – ${nlMonthLabel(new Date())}`;
 
   const unpaidCount = unpaidThisMonthCount ?? 0;
-  const unmatched = unmatchedCount ?? 0;
-  const hasTasks = unpaidCount > 0 || unmatched > 0;
+  const unmatchedTasks = unmatchedCount ?? 0;
+  const hasTasks = unpaidCount > 0 || unmatchedTasks > 0;
 
   return (
     <>
@@ -360,11 +362,11 @@ function DashboardInner() {
             <span className="text-[26px] font-bold leading-none tracking-[-0.02em] text-primary">
               {loading ? "…" : formatEuro(monthTotal)}
             </span>
-            {pctChange !== null && (
+            {!loading && pctChange !== null && (
               <span
                 className={[
                   "inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold",
-                  trending ? "text-[var(--success)]" : "text-[var(--error)]",
+                  trending ? "text-[var(--success)]" : "text-destructive",
                 ].join(" ")}
               >
                 {trending ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
@@ -374,7 +376,7 @@ function DashboardInner() {
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
             {selectedMonth}
-            {prevMonthTotal > 0 && ` · vs. vorige maand ${formatEuro(prevMonthTotal)}`}
+            {!loading && prevMonthTotal > 0 && ` · vs. vorige maand ${formatEuro(prevMonthTotal)}`}
           </p>
         </div>
 
@@ -482,10 +484,10 @@ function DashboardInner() {
               href="/toezeggingen"
             />
           )}
-          {unmatched > 0 && (
+          {unmatchedTasks > 0 && (
             <TaskCard
               icon={<Unlink size={16} />}
-              title={`${unmatched} ${unmatched === 1 ? "donatie" : "donaties"} zonder koppeling`}
+              title={`${unmatchedTasks} ${unmatchedTasks === 1 ? "donatie" : "donaties"} zonder koppeling`}
               hint="Bekijk welke donaties nog los staan"
               href="/donations"
             />
