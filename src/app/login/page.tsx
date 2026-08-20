@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { MosqonLogo } from "@/components/MosqonLogo";
 import { supabase } from "../lib/supabase";
 
@@ -34,9 +33,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[var(--surface-zone)] flex flex-col">
       {/* Top logo bar */}
-      <header className="h-14 flex items-center px-8 border-b border-border shrink-0">
+      <header className="h-14 flex items-center px-8 shrink-0">
         <MosqonLogo
           className="h-8 w-auto text-foreground"
           ariaLabel="Mosqon"
@@ -55,79 +54,68 @@ export default function LoginPage() {
         >
           {/* Lock icon circle */}
           <div className="flex justify-center mb-6">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ background: "var(--accent-light)" }}
-            >
-              <Lock size={22} className="text-primary" />
+            <div className="w-14 h-14 rounded-full flex items-center justify-center bg-[var(--accent-light)] text-primary">
+              <Lock size={22} />
             </div>
           </div>
 
-          <Card className="shadow-lg">
-            <CardContent className="p-6">
-              <h1 className="font-serif text-2xl font-normal text-foreground text-center mb-6">
-                Inloggen
-              </h1>
+          <div className="w-full max-w-sm rounded-[16px] bg-card p-8 shadow-[var(--shadow)]">
+            <h1 className="text-xl font-bold tracking-[-0.02em] text-foreground text-center mb-6">
+              Inloggen
+            </h1>
 
-              <form onSubmit={handleLogin} className="flex flex-col gap-3">
+            <form onSubmit={handleLogin} className="flex flex-col gap-3">
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="E-mailadres"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+
+              <div className="relative">
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="E-mailadres"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Wachtwoord"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="email"
+                  autoComplete="current-password"
+                  className="pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Verberg wachtwoord" : "Toon wachtwoord"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
 
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Wachtwoord"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                    aria-label={showPassword ? "Verberg wachtwoord" : "Toon wachtwoord"}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+              {error && (
+                <div className="flex items-center gap-2 rounded-[10px] bg-[var(--error-light)] p-3 text-sm text-destructive">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>{error}</span>
                 </div>
+              )}
 
-                {error && (
-                  <div
-                    className="flex items-center gap-2 p-3 rounded-[7px] text-sm"
-                    style={{
-                      background: "var(--error-light)",
-                      color: "var(--error)",
-                    }}
-                  >
-                    <AlertCircle size={14} className="shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <Button type="submit" className="w-full mt-1" disabled={loading}>
-                  {loading ? "Bezig..." : "Inloggen"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+              <Button type="submit" className="w-full mt-1" disabled={loading}>
+                {loading ? "Inloggen…" : "Inloggen"}
+              </Button>
+            </form>
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="h-10 flex items-center justify-center border-t border-border shrink-0">
+      <footer className="h-10 flex items-center justify-center shrink-0">
         <p className="text-[11px] text-muted-foreground">
           Powered by Mosqon · Digitaal beheer voor moskeeën
         </p>

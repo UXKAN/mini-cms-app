@@ -16,8 +16,8 @@ const dmSerif = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Mini CRM",
-  description: "Lichtgewicht CRM voor organisaties",
+  title: "Mosqon",
+  description: "Digitaal beheer voor moskeeën",
 };
 
 export const viewport = {
