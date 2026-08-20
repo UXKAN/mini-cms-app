@@ -32,6 +32,15 @@ Bij elk item: korte beschrijving, ernst, en wanneer we het oppakken.
 
 ---
 
+## 2026-08-20 — MatchPaymentDialog kan dubbele donatie inserten (pre-existing, gevonden bij redesign-eindreview)
+
+`src/app/toezeggingen/page.tsx` (MatchPaymentDialog): als de donatie-insert slaagt maar de
+status-update van de pledge/akte daarna faalt, sluit de gebruiker de dialog en is de
+retry-guard (`insertedAmount`, component-local) weg. Opnieuw indienen insert dan een
+tweede donatie. Financieel dubbeltelrisico; verdient een eigen bugfix (idempotente
+insert of persistente guard). Gevonden 2026-08-20 tijdens de eindreview van
+`feat/app-redesign`; niet door die branch veroorzaakt en daar bewust niet gefixt.
+
 ## Hoe dit document gebruikt wordt
 
 - Items hier zijn **erkend en bewust uitgesteld**. Niet vergeten — wel

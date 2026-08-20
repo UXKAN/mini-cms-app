@@ -627,6 +627,8 @@ npm run build && git add src/app/login/page.tsx && git commit -m "feat(redesign)
 
 - [ ] **Step 1: Volledige runthrough** op dev-server: dashboard → leden → lid-detail → donaties (nieuwe donatie incl. toast) → toezeggingen (markeer betaald) → uitloggen → login. Op 1280px én 375px. Geen console-errors.
 - [ ] **Step 2: States forceren:** lege organisatie-view (zoekterm zonder hits), offline-fout, laad-skeletons (netwerk throttlen).
+- [ ] **Step 2b: Restjes uit reviews:** `ConfirmDeleteDialog.tsx` heeft nog hardcoded `rose-*`-kleuren → omzetten naar destructive/error-tokens. `/login` heeft nog paginatitel "Mini CRM" in de metadata → "Mosqon". Vier `rounded-lg`-meelifters visueel checken (gift selectable-cards, alert-dialog, PublicHeader, ThankYou).
+
 - [ ] **Step 3: Serif-restjescheck:**
 
 ```bash

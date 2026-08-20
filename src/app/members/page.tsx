@@ -198,6 +198,7 @@ function MembersInner() {
     const { error: delError } = await supabase.from("members").delete().in("id", ids);
     if (delError) {
       setError(delError.message);
+      toast.error("Verwijderen mislukt: " + delError.message);
       return false;
     }
     t.clearSelection();

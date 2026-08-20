@@ -12,6 +12,14 @@ _(nog leeg — voeg toe wanneer je iets bedenkt dat je niet wil verliezen)_
 
 ---
 
+- DialogBody adopteren in lange dialogs zodat sluitknop/footer vast blijven staan bij scrollen (component bestaat al)
+- Rauwe <select>-elementen in dialogs vervangen door shadcn Select in redesign-stijl (toolbar is al om)
+- Gedeelde tabelstijl-constanten (COL_HEAD/CELL/PILL) naar één module i.p.v. vijf kopieën
+- StatCard trend-prop zodat het dashboard geen eigen featured-kaart hoeft na te bouwen
+- Gift-flow (GiftForm/ThankYou/GiftFormDialog) meenemen in soft-SaaS-stijl of bewust serif houden als donateursgezicht; incl. amber-blok in ThankYou naar warn-tokens
+- /members/import-route opruimen (onbereikbaar; import leeft in dialog) en /updates-pagina herstijlen of verwijderen
+- toast.error-dekking breder trekken (nu alleen delete-paden); overlay/schaduw-oklch-literals naar --overlay/--shadow-primary tokens
+
 ## Verplaatst naar MVP
 
 _(als een idee hier verschijnt, dan staat het ook in `mvp-scope.md` en `decisions.md`)_
