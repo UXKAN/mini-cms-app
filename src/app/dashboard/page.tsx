@@ -2,11 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  TrendingDown,
+  TrendingUp,
+  Unlink,
+} from "lucide-react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
+  CartesianGrid,
   Tooltip,
   XAxis,
 } from "recharts";
@@ -16,16 +24,11 @@ import { toLocalISODate } from "../lib/formatters";
 import { remainingAmount } from "../lib/payments";
 import { fetchPaidByKey } from "../lib/matchedDonations";
 import AppShell from "../components/AppShell";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { Member } from "../lib/types";
+import { PageHeader } from "../components/PageHeader";
+import { StatCard } from "@/components/table/StatCard";
+import { Button } from "@/components/ui/button";
 
 /* ─── helpers ─────────────────────────────────────── */
-
-function displayName(m: Member): string {
-  const combined = [m.first_name, m.last_name].filter(Boolean).join(" ").trim();
-  return combined || m.name || "—";
-}
 
 function formatEuro(n: number, decimals = 0) {
   return n.toLocaleString("nl-NL", {
@@ -36,19 +39,65 @@ function formatEuro(n: number, decimals = 0) {
   });
 }
 
-function monthLabel(date: Date) {
-  return date.toLocaleDateString("nl-NL", { month: "short" });
-}
-
 const NL_MONTHS = [
   "januari","februari","maart","april","mei","juni",
   "juli","augustus","september","oktober","november","december",
 ];
 
+function nlMonthLabel(date: Date) {
+  const m = NL_MONTHS[date.getMonth()];
+  return `${m.charAt(0).toUpperCase()}${m.slice(1)} ${date.getFullYear()}`;
+}
+
+const PANEL_LABEL =
+  "text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+const PANEL =
+  "rounded-lg bg-card p-5 shadow-[var(--shadow)]";
+const METRIC_VALUE =
+  "text-[26px] font-bold leading-none tracking-[-0.02em] text-foreground";
+
 /* ─── types ────────────────────────────────────────── */
 
 interface ChartPoint { label: string; amount: number }
 interface TopDonor { id: string; name: string; type: string; amount: number }
+
+/* ─── building blocks ──────────────────────────────── */
+
+function Metric({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <p className={METRIC_VALUE}>{value}</p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function TaskCard({
+  icon,
+  title,
+  hint,
+  href,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  hint: string;
+  href: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg bg-card p-4 shadow-[var(--shadow)]">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--warn-light)] text-[var(--warn)]">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </div>
+      <Button variant="secondary" size="sm" asChild>
+        <Link href={href}>Bekijk</Link>
+      </Button>
+    </div>
+  );
+}
 
 /* ─── main page ────────────────────────────────────── */
 
@@ -292,332 +341,242 @@ function DashboardInner() {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
+  const selectedMonth = nlMonthLabel(chartMonth);
+  const yearRange = `Jan – ${nlMonthLabel(new Date())}`;
+
+  const unpaidCount = unpaidThisMonthCount ?? 0;
+  const unmatched = unmatchedCount ?? 0;
+  const hasTasks = unpaidCount > 0 || unmatched > 0;
+
   return (
     <>
-      {/* Header */}
-      <header className="mb-8">
-        <h1 className="font-serif text-[40px] font-normal leading-tight" style={{ color: "var(--ink)" }}>
-          Dashboard
-        </h1>
-        <p className="text-sm mt-1 capitalize" style={{ color: "var(--ink-muted)" }}>
-          Overzicht · {today}
-        </p>
-      </header>
+      <PageHeader title="Dashboard" subtitle={`Overzicht · ${today}`} />
 
-      {/* ── Row 1: Donation chart ── */}
-      <Card className="mb-5">
-        <CardContent className="p-7">
-          <div className="flex items-start justify-between flex-wrap gap-6">
-            {/* Left: total + change */}
-            <div>
-              <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-                Totale donaties
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-serif text-[42px] leading-none" style={{ color: "var(--ink)" }}>
-                  {loading ? "…" : formatEuro(monthTotal)}
-                </span>
-                {pctChange !== null && (
-                  <span
-                    className="inline-flex items-center gap-1 text-[13px] font-semibold px-2 py-1 rounded-md"
-                    style={{
-                      background: trending ? "var(--success-light)" : "var(--error-light)",
-                      color: trending ? "var(--success)" : "var(--error)",
-                    }}
-                  >
-                    {trending ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                    {Math.abs(pctChange).toFixed(1)}%
-                  </span>
-                )}
-              </div>
-              {prevMonthTotal > 0 && (
-                <p className="text-sm mt-1" style={{ color: "var(--ink-muted)" }}>
-                  vs. vorige maand ({formatEuro(prevMonthTotal)})
-                </p>
-              )}
-
-              {/* Month navigation */}
-              <div className="flex items-center gap-2 mt-5">
-                <button
-                  onClick={prevMonth}
-                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors"
-                  style={{ border: "1px solid var(--border)", color: "var(--ink-muted)" }}
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <span className="text-sm font-medium px-2" style={{ color: "var(--ink)", minWidth: 110, textAlign: "center" }}>
-                  {NL_MONTHS[chartMonth.getMonth()].charAt(0).toUpperCase() + NL_MONTHS[chartMonth.getMonth()].slice(1)}{" "}
-                  {chartMonth.getFullYear()}
-                </span>
-                <button
-                  onClick={nextMonth}
-                  disabled={isCurrentMonth}
-                  className="w-7 h-7 rounded-md flex items-center justify-center transition-colors disabled:opacity-30"
-                  style={{ border: "1px solid var(--border)", color: "var(--ink-muted)" }}
-                >
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Right: year total */}
-            <div className="text-right">
-              <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-                Jaar tot nu
-              </div>
-              <div className="font-serif text-[32px] leading-none" style={{ color: "var(--ink)" }}>
-                {loading ? "…" : formatEuro(yearTotal)}
-              </div>
-              <p className="text-sm mt-1" style={{ color: "var(--ink-muted)" }}>
-                Jan – {NL_MONTHS[new Date().getMonth()].charAt(0).toUpperCase() + NL_MONTHS[new Date().getMonth()].slice(1)}{" "}
-                {new Date().getFullYear()}
-              </p>
-            </div>
-          </div>
-
-          {/* Chart */}
-          <div className="mt-7 h-[120px]">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10, fill: "var(--ink-subtle)" }}
-                    tickLine={false}
-                    axisLine={false}
-                    interval={4}
-                  />
-                  <Tooltip
-                    formatter={(v) => [formatEuro(Number(v ?? 0)), "Cumulatief"]}
-                    contentStyle={{
-                      fontSize: 12,
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      background: "var(--surface)",
-                      color: "var(--ink)",
-                      boxShadow: "var(--shadow)",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="var(--accent)"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, fill: "var(--accent)" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm" style={{ color: "var(--ink-subtle)" }}>
-                Geen donaties in deze maand
-              </div>
+      {/* ── Statgrid ── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg bg-[var(--accent-light)] p-5">
+          <p className={PANEL_LABEL}>Totale donaties</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="text-[26px] font-bold leading-none tracking-[-0.02em] text-primary">
+              {loading ? "…" : formatEuro(monthTotal)}
+            </span>
+            {pctChange !== null && (
+              <span
+                className={[
+                  "inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold",
+                  trending ? "text-[var(--success)]" : "text-[var(--error)]",
+                ].join(" ")}
+              >
+                {trending ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                {Math.abs(pctChange).toFixed(1)}%
+              </span>
             )}
           </div>
-        </CardContent>
-      </Card>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {selectedMonth}
+            {prevMonthTotal > 0 && ` · vs. vorige maand ${formatEuro(prevMonthTotal)}`}
+          </p>
+        </div>
 
-      {/* ── Row 1b: Operational stat-cards (periodieke + matching) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-              Periodiek verwacht / maand
-            </div>
-            <div className="font-serif text-[28px] leading-none" style={{ color: "var(--ink)" }}>
-              {loading ? "…" : formatEuro(periodiekeTotal ?? 0)}
-            </div>
-            <p className="text-[12px] mt-1" style={{ color: "var(--ink-muted)" }}>
-              {periodiekeCount ?? 0} actieve {periodiekeCount === 1 ? "akte" : "akten"}
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Jaar tot nu"
+          value={loading ? "…" : formatEuro(yearTotal)}
+          hint={yearRange}
+        />
 
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-              Niet betaald deze maand
-            </div>
-            <div className="font-serif text-[28px] leading-none" style={{ color: "var(--ink)" }}>
-              {loading ? "…" : formatEuro(unpaidThisMonthTotal ?? 0)}
-            </div>
-            <p className="text-[12px] mt-1" style={{ color: "var(--ink-muted)" }}>
-              {unpaidThisMonthCount ?? 0} {(unpaidThisMonthCount ?? 0) === 1 ? "akte zonder" : "akten zonder"} ontvangen donatie
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Periodiek verwacht / maand"
+          value={loading ? "…" : formatEuro(periodiekeTotal ?? 0)}
+          hint={`${periodiekeCount ?? 0} actieve ${periodiekeCount === 1 ? "akte" : "akten"}`}
+        />
 
-        <Card>
-          <CardContent className="p-5">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--ink-muted)" }}>
-              Niet gematcht
-            </div>
-            <div className="font-serif text-[28px] leading-none" style={{ color: "var(--ink)" }}>
-              {loading ? "…" : (unmatchedCount ?? 0)}
-            </div>
-            <p className="text-[12px] mt-1" style={{ color: "var(--ink-muted)" }}>
-              {(unmatchedCount ?? 0) === 1 ? "donatie zonder" : "donaties zonder"} koppeling
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Niet betaald deze maand"
+          tone="warn"
+          value={loading ? "…" : formatEuro(unpaidThisMonthTotal ?? 0)}
+          hint={`${unpaidCount} ${unpaidCount === 1 ? "akte" : "akten"} zonder ontvangen donatie`}
+        />
       </div>
 
-      {/* ── Row 2: Leden + Ondernemers ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-        {/* Maandelijkse Leden */}
-        <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Leden &amp; donateurs
-            </div>
-            <div className="flex gap-10 mb-6">
-              <div>
-                <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
-                  {loading ? "…" : (memberCount ?? 0)}
-                </div>
-                <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>actieve leden</div>
-              </div>
-              <div>
-                <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
-                  {loading ? "…" : formatEuro(monthlyRecurring ?? 0)}
-                </div>
-                <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>per maand terugkerend</div>
-              </div>
-            </div>
+      {/* ── Grafiekkaart ── */}
+      <div className={`mt-4 ${PANEL}`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className={PANEL_LABEL}>Donaties per dag (cumulatief)</p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Vorige maand"
+              onClick={prevMonth}
+              className="h-8 w-8 text-muted-foreground"
+            >
+              <ChevronLeft />
+            </Button>
+            <span className="min-w-[110px] text-center text-sm font-medium text-foreground">
+              {selectedMonth}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Volgende maand"
+              onClick={nextMonth}
+              disabled={isCurrentMonth}
+              className="h-8 w-8 text-muted-foreground"
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+        </div>
 
-            {topDonors.length > 0 && (
-              <>
-                <div className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--ink-muted)" }}>
-                  Top 5
-                </div>
-                <div className="border-t" style={{ borderColor: "var(--border)" }} />
+        <div className="mt-5 h-[160px]">
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                <CartesianGrid stroke="var(--border)" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={4}
+                />
+                <Tooltip
+                  formatter={(v) => [formatEuro(Number(v ?? 0)), "Cumulatief"]}
+                  contentStyle={{
+                    fontSize: 12,
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    background: "var(--card)",
+                    color: "var(--foreground)",
+                    boxShadow: "var(--shadow-lg)",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="var(--primary)"
+                  strokeWidth={2}
+                  fill="var(--primary)"
+                  fillOpacity={0.12}
+                  dot={false}
+                  activeDot={{ r: 4, fill: "var(--primary)" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Geen donaties in deze maand
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Taakkaarten ── */}
+      {!loading && hasTasks && (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {unpaidCount > 0 && (
+            <TaskCard
+              icon={<AlertCircle size={16} />}
+              title={`${unpaidCount} ${unpaidCount === 1 ? "akte" : "akten"} niet betaald · ${formatEuro(unpaidThisMonthTotal ?? 0)}`}
+              hint="Bekijk wie er nog openstaat"
+              href="/toezeggingen"
+            />
+          )}
+          {unmatched > 0 && (
+            <TaskCard
+              icon={<Unlink size={16} />}
+              title={`${unmatched} ${unmatched === 1 ? "donatie" : "donaties"} zonder koppeling`}
+              hint="Bekijk welke donaties nog los staan"
+              href="/donations"
+            />
+          )}
+        </div>
+      )}
+
+      {/* ── Leden + toezeggingen ── */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className={PANEL}>
+          <p className={PANEL_LABEL}>Leden &amp; donateurs</p>
+          <div className="mt-4 flex flex-wrap gap-10">
+            <Metric
+              value={loading ? "…" : String(memberCount ?? 0)}
+              label="actieve leden"
+            />
+            <Metric
+              value={loading ? "…" : formatEuro(monthlyRecurring ?? 0)}
+              label="per maand terugkerend"
+            />
+          </div>
+
+          {topDonors.length > 0 && (
+            <>
+              <p className={`mt-6 ${PANEL_LABEL}`}>Top 5</p>
+              <ul className="mt-2 divide-y divide-border">
                 {topDonors.map((d, i) => (
-                  <div
-                    key={d.id}
-                    className="flex items-center justify-between py-3"
-                    style={{ borderBottom: i < topDonors.length - 1 ? "1px solid var(--border)" : "none" }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-                        style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}
-                      >
+                  <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--accent-light)] text-[11px] font-bold text-[var(--accent-dark)]">
                         {i + 1}
                       </span>
-                      <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>{d.name}</span>
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {d.name}
+                      </span>
                       {d.type && (
-                        <span
-                          className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize"
-                          style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}
-                        >
+                        <span className="shrink-0 rounded-full bg-[var(--accent-light)] px-2 py-0.5 text-[11px] font-medium capitalize text-[var(--accent-dark)]">
                           {d.type}
                         </span>
                       )}
                     </div>
-                    <span className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
+                    <span className="shrink-0 text-sm font-semibold text-foreground">
                       {formatEuro(d.amount)}
                     </span>
-                  </div>
+                  </li>
                 ))}
-              </>
-            )}
+              </ul>
+            </>
+          )}
 
-            {topDonors.length === 0 && !loading && (
-              <p className="text-sm py-4" style={{ color: "var(--ink-subtle)" }}>
-                Nog geen leden met maandbedrag.{" "}
-                <Link href="/members" style={{ color: "var(--accent-dark)" }}>Voeg leden toe →</Link>
+          {topDonors.length === 0 && !loading && (
+            <div className="mt-5">
+              <p className="text-sm text-muted-foreground">
+                Nog geen leden met maandbedrag.
               </p>
-            )}
-          </CardContent>
-        </Card>
+              <Button variant="secondary" size="sm" asChild className="mt-3">
+                <Link href="/members">Voeg leden toe</Link>
+              </Button>
+            </div>
+          )}
+        </div>
 
-        {/* Ondernemers */}
-        <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Ondernemers
+        <div className={PANEL}>
+          <p className={PANEL_LABEL}>Openstaande toezeggingen</p>
+          {toezeggingenCount === 0 ? (
+            <div className="mt-5">
+              <p className="text-sm text-muted-foreground">
+                Geen openstaande toezeggingen.
+              </p>
+              <Button variant="secondary" size="sm" asChild className="mt-3">
+                <Link href="/toezeggingen">Nieuwe toezegging registreren</Link>
+              </Button>
             </div>
-            <div className="py-8 text-center">
-              <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>Ondernemer module komt binnenkort.</p>
-              <Link
-                href="/ondernemers"
-                className="inline-block mt-3 text-sm font-medium"
-                style={{ color: "var(--accent-dark)" }}
-              >
-                Bekijk ondernemers →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Row 3: Evenementen + Toezeggingen ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Aankomende evenementen */}
-        <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Aankomende evenementen
-            </div>
-            <div className="py-8 text-center">
-              <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>Evenementen module komt binnenkort.</p>
-              <Link
-                href="/evenementen"
-                className="inline-block mt-3 text-sm font-medium"
-                style={{ color: "var(--accent-dark)" }}
-              >
-                Bekijk evenementen →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Toezeggingen */}
-        <Card>
-          <CardContent className="p-7">
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-5" style={{ color: "var(--ink-muted)" }}>
-              Openstaande toezeggingen
-            </div>
-            {toezeggingenCount === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-sm" style={{ color: "var(--ink-subtle)" }}>
-                  Geen openstaande toezeggingen.
-                </p>
-                <Link
-                  href="/toezeggingen"
-                  className="inline-block mt-3 text-sm font-medium"
-                  style={{ color: "var(--accent-dark)" }}
-                >
-                  Nieuwe toezegging registreren →
-                </Link>
+          ) : (
+            <>
+              <div className="mt-4 flex flex-wrap gap-10">
+                <Metric
+                  value={loading ? "…" : String(toezeggingenCount ?? 0)}
+                  label="stuks open"
+                />
+                <Metric
+                  value={loading ? "…" : formatEuro(toezeggingenTotal ?? 0)}
+                  label="totaal verwacht"
+                />
               </div>
-            ) : (
-              <>
-                <div className="flex gap-10 mb-5">
-                  <div>
-                    <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
-                      {loading ? "…" : (toezeggingenCount ?? 0)}
-                    </div>
-                    <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>stuks open</div>
-                  </div>
-                  <div>
-                    <div className="font-serif text-[38px] leading-none" style={{ color: "var(--ink)" }}>
-                      {loading ? "…" : formatEuro(toezeggingenTotal ?? 0)}
-                    </div>
-                    <div className="text-[13px] mt-1" style={{ color: "var(--ink-muted)" }}>totaal verwacht</div>
-                  </div>
-                </div>
-                <Link
-                  href="/toezeggingen"
-                  className="text-sm font-medium"
-                  style={{ color: "var(--accent-dark)" }}
-                >
-                  Bekijk alle →
-                </Link>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              <Button variant="secondary" size="sm" asChild className="mt-5">
+                <Link href="/toezeggingen">Bekijk alle</Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </>
   );
