@@ -48,6 +48,8 @@ Verwacht: build groen, route-lijst geprint.
 git log --oneline -3
 ```
 
+> **Uitgevoerd als cherry-pick (2026-08-20):** `frontend/design` bleek een verouderde april-branch (51 commits, verlaten CRM-spoor). In plaats van een merge zijn alleen de 4 relevante modal-commits gecherry-pickt (d817a8e, fb988db, fd251ea, 305df30); `536c01f` werd leeg en is geskipt. Reviews: spec ✅, kwaliteit approve met twee vervolg-punten die in Task 1 en 5 zijn opgenomen.
+
 ---
 
 ### Task 1: Designtokens + typografie (globals.css)
@@ -101,13 +103,15 @@ git log --oneline -3
   --shadow-lg: 0 4px 14px oklch(0.22 0.015 170 / 0.12);
 ```
 
-- [ ] **Step 2: Build + visuele smoketest**
+- [ ] **Step 2: Token-opruiming uit Task 0-review.** Verwijder `--color-surface: var(--surface)` uit het `@theme inline`-blok (dood duplicaat van `--color-card`; het enige gebruik, `bg-surface` in `dialog.tsx`, wordt in Task 5 `bg-card`). Laat de legacy `--surface`-alias in `:root` staan (imports/onboarding).
+
+- [ ] **Step 3: Build + visuele smoketest**
 
 ```bash
 npm run build
 ```
 
-Browser (`/login`): achtergrond wit i.p.v. crème, knop merkgroen. Alles nog leesbaar; borders lichter.
+Browser (`/login`): achtergrond wit i.p.v. crème, knop merkgroen. Alles nog leesbaar; borders lichter. NB: `bg-surface` in dialog.tsx verwijst na deze taak tijdelijk nergens meer naar als de @theme-regel weg is — zet in deze taak dialog.tsx alvast op `bg-card` (één woord) zodat de build groen blijft; de volledige dialog-restyle volgt in Task 5.
 
 - [ ] **Step 3: Contrastcheck.** In de browserconsole van een willekeurige pagina: muted-tekst op wit moet AA halen. `getComputedStyle`-check of visueel: secundaire tekst duidelijk leesbaar. Zo niet: `--muted-foreground` donkerder maken (L −0.02) en herbouwen.
 
@@ -351,7 +355,8 @@ git add src/app/components/AppShell.tsx && git commit -m "feat(redesign): AppShe
 h-10 w-full rounded-[10px] bg-[var(--surface-zone)] px-3.5 text-sm text-foreground placeholder:text-muted-foreground border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
 ```
 
-- [ ] **Step 3: Dialog.** In `dialog.tsx`: overlay → `bg-[oklch(0.22_0.015_170/0.35)]`; content → `rounded-[16px] bg-card shadow-[var(--shadow-lg)] border-0` (max-h/overflow uit de merge behouden). Titel `text-lg font-bold tracking-tight`, description `text-sm text-muted-foreground`.
+- [ ] **Step 3: Dialog.** In `dialog.tsx`: overlay → `bg-[oklch(0.22_0.015_170/0.35)]`; content → `rounded-[16px] bg-card shadow-[var(--shadow-lg)] border-0`. Titel `text-lg font-bold tracking-tight`, description `text-sm text-muted-foreground`.
+  **Scroll-fix uit Task 0-review:** verplaats `max-h`/`overflow-y-auto` van `DialogContent` naar een binnenwrapper om de body-children, zodat de sluitknop (absolute top-4 right-4) en `DialogFooter` vast blijven staan bij lange dialogs. Structuur: content = `flex max-h-[calc(100vh-4rem)] flex-col`, binnenwrapper = `flex-1 overflow-y-auto` rond alles behalve header/footer/close. Controleer daarna dat de twee dialogs op `members/page.tsx` met eigen `max-h-[90vh] overflow-y-auto`-overrides nog kloppen; haal die overrides weg als de basis nu volstaat (één bron van waarheid).
 
 - [ ] **Step 4: Build + browsercheck.** Dialog "+ Nieuwe donatie" openen: wit vlak radius 16 op dim, inputs op zone-tint, knopvolgorde intact, mobiel (375px) vult de dialog vrijwel het scherm (bestaand gedrag uit merge).
 
